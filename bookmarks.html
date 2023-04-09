@@ -1,0 +1,300 @@
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+<div id="app">
+  <div class="query-container">
+    <input ref="query" v-model="query" @keydown.enter="goToFirstBookmark" class="query">
+  </div>
+  <div class="tag-groups">
+    <ul>
+      <li v-for="(group, tag) in groupedBookmarks" :key="tag" class="tag-group">
+        <div class="tag-name">{{ tag }}</div>
+        <ul>
+          <li v-for="(bookmark, name) in group" :key="name" class="item">
+            <a :href="bookmark.url">{{ name }}</a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  const bookmarks = {
+    "ChatGPT": {
+      "url": "https://chat.openai.com/chat",
+      "tags": ["🧰 Tools"]
+    },
+    "Twitter": {
+      "url": "https://mobile.twitter.com/home",
+      "tags": ["🧑 SNS"]
+    },
+    "GitHub": {
+      "url": "https://github.com/",
+      "tags": ["👨‍💻 Development", "📦 Tools"]
+    },
+    "Google": {
+      "url": "https://www.google.com/",
+      "tags": ["🔍 Search", "🌍 Web"]
+    },
+    "Wikipedia": {
+      "url": "https://www.wikipedia.org/",
+      "tags": ["📚 Reference", "🌍 Web"]
+    },
+    "YouTube": {
+      "url": "https://www.youtube.com/",
+      "tags": ["📹 Video", "🎬 Entertainment"]
+    },
+    "Reddit": {
+      "url": "https://www.reddit.com/",
+      "tags": ["🗣️ Discussion", "🧑 SNS"]
+    },
+    "Amazon": {
+      "url": "https://www.amazon.com/",
+      "tags": ["🛍️ Shopping", "📦 Tools"]
+    },
+    "LinkedIn": {
+      "url": "https://www.linkedin.com/",
+      "tags": ["👨‍💼 Professional", "🧑 SNS"]
+    },
+    "Netflix": {
+      "url": "https://www.netflix.com/",
+      "tags": ["🎥 Streaming", "🎬 Entertainment"]
+    },
+    "Dropbox": {
+      "url": "https://www.dropbox.com/",
+      "tags": ["💾 Storage", "📦 Tools"]
+    },
+    "Netflix": {
+      "url": "https://www.netflix.com/",
+      "tags": ["🎥 Streaming", "🎬 Entertainment"]
+    },
+    "Pinterest": {
+      "url": "https://www.pinterest.com/",
+      "tags": ["📌 Inspiration", "🧑 SNS"]
+    },
+    "Slack": {
+      "url": "https://slack.com/",
+      "tags": ["💬 Communication", "👨‍💼 Professional"]
+    },
+    "Twitch": {
+      "url": "https://www.twitch.tv/",
+      "tags": ["🎮 Gaming", "🎬 Entertainment"]
+    },
+    "Zoom": {
+      "url": "https://zoom.us/",
+      "tags": ["👥 Meetings", "👨‍💼 Professional"]
+    },
+    "Discord": {
+      "url": "https://discord.com/",
+      "tags": ["💬 Communication", "🎮 Gaming"]
+    },
+    "Google Drive": {
+      "url": "https://www.google.com/drive/",
+      "tags": ["💾 Storage", "📦 Tools"]
+    },
+    "Hulu": {
+      "url": "https://www.hulu.com/",
+      "tags": ["🎥 Streaming", "🎬 Entertainment"]
+    },
+    "Instagram": {
+      "url": "https://www.instagram.com/",
+      "tags": ["📷 Photos", "🧑 SNS"]
+    },
+    "Notion": {
+      "url": "https://www.notion.so/",
+      "tags": ["📝 Productivity", "📦 Tools"]
+    },
+    "Spotify": {
+      "url": "https://www.spotify.com/",
+      "tags": ["🎧 Music", "🎬 Entertainment"]
+    },
+    "TikTok": {
+      "url": "https://www.tiktok.com/",
+      "tags": ["📹 Short-form Video", "🧑 SNS"]
+    },
+    "Discord": {
+      "url": "https://discord.com/",
+      "tags": ["💬 Communication", "🎮 Gaming"]
+    },
+    "Goodreads": {
+      "url": "https://www.goodreads.com/",
+      "tags": ["📚 Books", "📝 Productivity"]
+    },
+    "Last.fm": {
+      "url": "https://www.last.fm/",
+      "tags": ["🎧 Music", "📊 Statistics"]
+    },
+    "Letterboxd": {
+      "url": "https://letterboxd.com/",
+      "tags": ["🎥 Movies", "📊 Statistics"]
+    },
+    "Meetup": {
+      "url": "https://www.meetup.com/",
+      "tags": ["👥 Community", "👨‍💼 Professional"]
+    },
+    "New York Times": {
+      "url": "https://www.nytimes.com/",
+      "tags": ["📰 News", "📊 Statistics"]
+    },
+    "Replit": {
+      "url": "https://replit.com/",
+      "tags": ["💻 Programming", "📦 Tools"]
+    },
+    "SoundCloud": {
+      "url": "https://soundcloud.com/",
+      "tags": ["🎧 Music", "📊 Statistics"]
+    },
+    "Untappd": {
+      "url": "https://untappd.com/",
+      "tags": ["🍺 Beer", "📊 Statistics"]
+    },
+    "Archive of Our Own": {
+      "url": "https://archiveofourown.org/",
+      "tags": ["📚 Fanfiction", "🧑 SNS"]
+    }
+  }
+  const { createApp } = Vue
+
+  createApp({
+    data() {
+      return {
+        query: '',
+        bookmarks
+      }
+    },
+    mounted() {
+      this.$refs.query.focus()
+    },
+    computed: {
+      filteredBookmarks() {
+        return Object.keys(this.bookmarks)
+          .filter(name => name.toLowerCase().includes(this.query.toLowerCase()))
+          .reduce((obj, name) => {
+            obj[name] = this.bookmarks[name]
+            return obj
+          }, {})
+      },
+      groupedBookmarks() {
+        let groups = {}
+        for (let [name, bookmark] of Object.entries(this.filteredBookmarks)) {
+          for (let tag of bookmark.tags) {
+            if (!groups[tag]) {
+              groups[tag] = {}
+            }
+            groups[tag][name] = bookmark
+          }
+        }
+        return groups
+      }
+    },
+    methods: {
+      goToFirstBookmark() {
+        const filteredNames = Object.keys(this.filteredBookmarks)
+        if (filteredNames.length > 0) {
+          window.location.href = this.filteredBookmarks[filteredNames[0]].url
+        }
+      }
+    }
+  }).mount('#app')
+</script>
+
+<style>
+  :root {
+    --primary: red;
+    --space-s: 8px;
+    --space-m: 16px;
+  }
+
+  body {
+    font-family: "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", "メイリオ", Meiryo, "ＭＳ Ｐゴシック", sans-serif;
+  }
+
+  .query-container {
+    padding: var(--space-m);
+  }
+
+  .query-container:before {
+    content: "🔍";
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    position: absolute;
+    top: 36px;
+    left: 36px;
+  }
+
+  .query {
+    border-radius: 10px;
+    border: 1px solid lightgray;
+    font-size: large;
+    /* padding: var(--space-m); */
+    padding: 16px 16px 16px 48px;
+    width: 100%;
+  }
+
+  .tag-groups {
+    padding: 0 var(--space-m) var(--space-m) var(--space-s);
+  }
+
+  .tag-group {
+    display: inline-block;
+    margin: 8px;
+    padding: var(--space-m);
+    border-radius: 5px;
+    border: 1px solid #e8e8e8;
+    background-color: #f8f8f8;
+    vertical-align: top;
+    width: calc(100% - 40px);
+  }
+
+  .tag-name {
+    padding-bottom: var(--space-m);
+    font-weight: bold;
+  }
+
+  .item {
+    list-style: none;
+  }
+
+  .item a {
+    text-decoration: none;
+    color: blue;
+  }
+
+  .item a:hover {
+    color: green;
+  }
+
+  ul {
+    padding-inline-start: 0;
+  }
+
+  .tag-groups>ul {
+    padding-inline-start: 0;
+    -moz-column-gap: 10px;
+    column-gap: 10px;
+    -moz-column-count: 4;
+    column-count: 4;
+  }
+
+  @media (min-width: 800px) and (max-width: 1120px) {
+    .tag-groups>ul {
+      -moz-column-count: 3;
+      column-count: 3;
+    }
+  }
+
+  @media (min-width: 480px) and (max-width: 800px) {
+    .tag-groups>ul {
+      -moz-column-count: 2;
+      column-count: 2;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .tag-groups>ul {
+      -moz-column-count: 1;
+      column-count: 1;
+    }
+  }
+</style>
