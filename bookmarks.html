@@ -6,7 +6,7 @@
   </div>
   <div class="tag-groups">
     <ul>
-      <li v-for="(group, tag) in groupedBookmarks" :key="tag" class="tag-group">
+      <li v-for="(group, tag) in sortedGroupedBookmarks" :key="tag" class="tag-group">
         <div class="tag-name">{{ tag }}</div>
         <ul>
           <li v-for="(bookmark, name) in group" :key="name" class="item">
@@ -216,19 +216,35 @@
           }
         }
         return groups
+      },
+      sortedGroupedBookmarks() {
+        const removeEmojis = str => str.replace(/[\u{1F000}-\u{1F6FF}]/gu, '');
+        const sortedGroups = Object.keys(this.groupedBookmarks).sort((a, b) => {
+          return removeEmojis(a).localeCompare(removeEmojis(b));
+        });
+        const sortedBookmarks = {};
+        for (let group of sortedGroups) {
+          sortedBookmarks[group] = Object.keys(this.groupedBookmarks[group]).sort((a, b) => {
+            return removeEmojis(a).localeCompare(removeEmojis(b));
+          }).reduce((obj, key) => {
+            obj[key] = this.groupedBookmarks[group][key];
+            return obj;
+          }, {});
+        }
+        return sortedBookmarks;
       }
     },
     methods: {
       goToFirstBookmark() {
-          const filteredNames = Object.keys(this.filteredBookmarks);
-          if (filteredNames.length > 0) {
-            const bookmark = this.filteredBookmarks[filteredNames[0]];
-            if (bookmark.url.includes("%s")) {
-              this.promptForParameter(bookmark);
-            } else {
-              window.location.href = bookmark.url;
-            }
+        const filteredNames = Object.keys(this.filteredBookmarks);
+        if (filteredNames.length > 0) {
+          const bookmark = this.filteredBookmarks[filteredNames[0]];
+          if (bookmark.url.includes("%s")) {
+            this.promptForParameter(bookmark);
+          } else {
+            window.location.href = bookmark.url;
           }
+        }
       },
       promptForParameter(bookmark) {
         const parameter = prompt(`Enter a value for parameter:`);
@@ -319,7 +335,7 @@
     padding-inline-start: 0;
   }
 
-  .tag-groups > ul {
+  .tag-groups>ul {
     padding-inline-start: 0;
     -moz-column-gap: 10px;
     column-gap: 10px;
@@ -328,21 +344,21 @@
   }
 
   @media (min-width: 800px) and (max-width: 1120px) {
-    .tag-groups > ul {
+    .tag-groups>ul {
       -moz-column-count: 3;
       column-count: 3;
     }
   }
 
   @media (min-width: 480px) and (max-width: 800px) {
-    .tag-groups > ul {
+    .tag-groups>ul {
       -moz-column-count: 2;
       column-count: 2;
     }
   }
 
   @media (max-width: 480px) {
-    .tag-groups > ul {
+    .tag-groups>ul {
       -moz-column-count: 1;
       column-count: 1;
     }
