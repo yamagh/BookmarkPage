@@ -10,7 +10,12 @@
         <div class="tag-name">{{ tag }}</div>
         <ul>
           <li v-for="(bookmark, name) in group" :key="name" class="item">
-            <a :href="bookmark.url">{{ name }}</a>
+            <a :href="bookmark.url" @click.prevent="navigate(bookmark)">{{ name }}</a>
+            <template v-if="bookmark.url.includes('%s')">
+              <span style="display: none">
+                <button @click="promptForParameter(bookmark)">Go</button>
+              </span>
+            </template>
           </li>
         </ul>
       </li>
@@ -36,7 +41,7 @@
       "keywords": ["gh"]
     },
     "Google": {
-      "url": "https://www.google.com/",
+      "url": "https://www.google.com/search?q=%s",
       "tags": ["🔍 Search", "🌍 Web"],
       "keywords": ["gg"]
     },
@@ -215,9 +220,28 @@
     },
     methods: {
       goToFirstBookmark() {
-        const filteredNames = Object.keys(this.filteredBookmarks)
-        if (filteredNames.length > 0) {
-          window.location.href = this.filteredBookmarks[filteredNames[0]].url
+          const filteredNames = Object.keys(this.filteredBookmarks);
+          if (filteredNames.length > 0) {
+            const bookmark = this.filteredBookmarks[filteredNames[0]];
+            if (bookmark.url.includes("%s")) {
+              this.promptForParameter(bookmark);
+            } else {
+              window.location.href = bookmark.url;
+            }
+          }
+      },
+      promptForParameter(bookmark) {
+        const parameter = prompt(`Enter a value for parameter:`);
+        if (parameter !== null) {
+          const url = bookmark.url.replace("%s", encodeURIComponent(parameter));
+          window.location.href = url;
+        }
+      },
+      navigate(bookmark) {
+        if (bookmark.url.includes("%s")) {
+          this.promptForParameter(bookmark);
+        } else {
+          window.location.href = bookmark.url;
         }
       }
     }
