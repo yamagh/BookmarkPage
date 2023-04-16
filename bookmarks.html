@@ -23,67 +23,62 @@
     "ChatGPT": {
       "url": "https://chat.openai.com/chat",
       "tags": ["🧰 Tools"],
-      "keywords": []
+      "keywords": ["cg"]
     },
     "Twitter": {
       "url": "https://mobile.twitter.com/home",
       "tags": ["🧑 SNS"],
-      "keywords": []
+      "keywords": ["tw"]
     },
     "GitHub": {
       "url": "https://github.com/",
       "tags": ["👨‍💻 Development", "📦 Tools"],
-      "keywords": []
+      "keywords": ["gh"]
     },
     "Google": {
       "url": "https://www.google.com/",
       "tags": ["🔍 Search", "🌍 Web"],
-      "keywords": []
+      "keywords": ["gg"]
     },
     "Wikipedia": {
       "url": "https://www.wikipedia.org/",
       "tags": ["📚 Reference", "🌍 Web"],
-      "keywords": []
+      "keywords": ["wp"]
     },
     "YouTube": {
       "url": "https://www.youtube.com/",
       "tags": ["📹 Video", "🎬 Entertainment"],
-      "keywords": []
+      "keywords": ["yt"]
     },
     "Reddit": {
       "url": "https://www.reddit.com/",
       "tags": ["🗣️ Discussion", "🧑 SNS"],
-      "keywords": []
+      "keywords": ["rd"]
     },
     "Amazon": {
       "url": "https://www.amazon.com/",
       "tags": ["🛍️ Shopping", "📦 Tools"],
-      "keywords": []
+      "keywords": ["amz"]
     },
     "LinkedIn": {
       "url": "https://www.linkedin.com/",
       "tags": ["👨‍💼 Professional", "🧑 SNS"],
-      "keywords": []
+      "keywords": ["li"]
     },
     "Netflix": {
       "url": "https://www.netflix.com/",
       "tags": ["🎥 Streaming", "🎬 Entertainment"],
-      "keywords": []
+      "keywords": ["nf"]
     },
     "Dropbox": {
       "url": "https://www.dropbox.com/",
       "tags": ["💾 Storage", "📦 Tools"],
-      "keywords": []
-    },
-    "Netflix": {
-      "url": "https://www.netflix.com/",
-      "tags": ["🎥 Streaming", "🎬 Entertainment"],
-      "keywords": []
+      "keywords": ["db"]
     },
     "Pinterest": {
       "url": "https://www.pinterest.com/",
       "tags": ["📌 Inspiration", "🧑 SNS"],
-      "keywords": []
+      "keywords": ["pt"]
     },
     "Slack": {
       "url": "https://slack.com/",
@@ -93,7 +88,7 @@
     "Twitch": {
       "url": "https://www.twitch.tv/",
       "tags": ["🎮 Gaming", "🎬 Entertainment"],
-      "keywords": []
+      "keywords": ["tc"]
     },
     "Zoom": {
       "url": "https://zoom.us/",
@@ -103,27 +98,27 @@
     "Discord": {
       "url": "https://discord.com/",
       "tags": ["💬 Communication", "🎮 Gaming"],
-      "keywords": []
+      "keywords": ["dd"]
     },
     "Google Drive": {
       "url": "https://www.google.com/drive/",
       "tags": ["💾 Storage", "📦 Tools"],
-      "keywords": []
+      "keywords": ["gd"]
     },
     "Hulu": {
       "url": "https://www.hulu.com/",
       "tags": ["🎥 Streaming", "🎬 Entertainment"],
-      "keywords": []
+      "keywords": ["hl"]
     },
     "Instagram": {
       "url": "https://www.instagram.com/",
       "tags": ["📷 Photos", "🧑 SNS"],
-      "keywords": []
+      "keywords": ["ig"]
     },
     "Notion": {
       "url": "https://www.notion.so/",
       "tags": ["📝 Productivity", "📦 Tools"],
-      "keywords": []
+      "keywords": ["nt"]
     },
     "Spotify": {
       "url": "https://www.spotify.com/",
@@ -133,12 +128,7 @@
     "TikTok": {
       "url": "https://www.tiktok.com/",
       "tags": ["📹 Short-form Video", "🧑 SNS"],
-      "keywords": []
-    },
-    "Discord": {
-      "url": "https://discord.com/",
-      "tags": ["💬 Communication", "🎮 Gaming"],
-      "keywords": []
+      "keywords": ["tt"]
     },
     "Goodreads": {
       "url": "https://www.goodreads.com/",
@@ -200,19 +190,15 @@
     },
     computed: {
       filteredBookmarks() {
-        return Object.keys(this.bookmarks)
-          .filter(name => {
-            const bookmark = this.bookmarks[name];
-            const nameMatches = name.toLowerCase().includes(this.query.toLowerCase());
-            const keywordsMatch = bookmark.keywords.some(keyword =>
-              keyword.toLowerCase().includes(this.query.toLowerCase())
-            );
-            return nameMatches || keywordsMatch;
-          })
-          .reduce((obj, name) => {
-            obj[name] = this.bookmarks[name]
-            return obj
-          }, {})
+        const queryWords = this.query.toLowerCase().split(/\s+/)
+        return Object.entries(this.bookmarks).reduce((result, [name, bookmark]) => {
+          const nameMatches = queryWords.every(word => name.toLowerCase().includes(word))
+          const keywordMatches = queryWords.every(word => bookmark.keywords.some(keyword => keyword.toLowerCase().includes(word)))
+          if (nameMatches || keywordMatches) {
+            result[name] = bookmark
+          }
+          return result
+        }, {})
       },
       groupedBookmarks() {
         let groups = {}
@@ -309,7 +295,7 @@
     padding-inline-start: 0;
   }
 
-  .tag-groups>ul {
+  .tag-groups > ul {
     padding-inline-start: 0;
     -moz-column-gap: 10px;
     column-gap: 10px;
@@ -318,21 +304,21 @@
   }
 
   @media (min-width: 800px) and (max-width: 1120px) {
-    .tag-groups>ul {
+    .tag-groups > ul {
       -moz-column-count: 3;
       column-count: 3;
     }
   }
 
   @media (min-width: 480px) and (max-width: 800px) {
-    .tag-groups>ul {
+    .tag-groups > ul {
       -moz-column-count: 2;
       column-count: 2;
     }
   }
 
   @media (max-width: 480px) {
-    .tag-groups>ul {
+    .tag-groups > ul {
       -moz-column-count: 1;
       column-count: 1;
     }
