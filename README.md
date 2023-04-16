@@ -1,6 +1,6 @@
 # Bookmark Search Application
 
-This is a simple bookmark search application built with Vue.js. You can filter bookmarks by name using the search box and browse bookmarks by tag.
+This is a simple web app that allows you to search through a list of bookmarks using keywords or bookmark names. The app uses the Vue.js framework to implement the search functionality and display the results.
 
 ## Prerequisites
 
@@ -26,7 +26,9 @@ To run this application, you need to have the following installed on your system
 
 ## Usage
 
-Once you have the application running in your web browser, you can use the search box to filter bookmarks by name. You can also browse bookmarks by tag by clicking on the tag name.
+To use the app, simply start typing in the search box at the top of the page. The app will filter the list of bookmarks in real time based on your input.
+
+You can also navigate to a bookmark by clicking on its name in the list. If the bookmark's URL includes the string "%s", you will be prompted to enter a value for the parameter before being taken to the URL.
 
 ### Sample Bookmarks
 
@@ -36,15 +38,28 @@ The application comes with a sample set of bookmarks, which are defined in the f
 const bookmarks = {
   "ChatGPT": {
     "url": "https://chat.openai.com/chat",
-    "tags": ["🧰 Tools"]
+    "tags": ["🧰 Tools"],
+    "keywords": ["cg"]
   },
-  "Twitter": {
-    "url": "https://mobile.twitter.com/home",
-    "tags": ["🧑 SNS"]
+  "Google": {
+    "url": "https://www.google.com/search?q=%s",
+    "tags": ["🔍 Search", "🌍 Web"],
+    "keywords": ["gg", "search"]
+  },
+  "Wikipedia": {
+    "url": "https://en.wikipedia.org/wiki/%s",
+    "tags": ["📚 Education", "🌍 Web"],
+    "keywords": ["wiki", "education"]
   },
   "GitHub": {
     "url": "https://github.com/",
-    "tags": ["👨‍💻 Development", "📦 Tools"]
+    "tags": ["👨‍💻 Development", "📦 Tools"],
+    "keywords": ["gh", "code"]
+  },
+  "Twitter": {
+    "url": "https://twitter.com/home",
+    "tags": ["🧑 SNS"],
+    "keywords": ["twitter", "social"]
   }
 }
 ```
