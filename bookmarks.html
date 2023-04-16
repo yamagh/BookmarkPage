@@ -236,9 +236,11 @@
     },
     methods: {
       goToFirstBookmark() {
-        const filteredNames = Object.keys(this.filteredBookmarks);
-        if (filteredNames.length > 0) {
-          const bookmark = this.filteredBookmarks[filteredNames[0]];
+        const sortedGroups = Object.keys(this.sortedGroupedBookmarks);
+        if (sortedGroups.length > 0) {
+          const group = this.sortedGroupedBookmarks[sortedGroups[0]];
+          const bookmarks = Object.values(group);
+          const bookmark = bookmarks[0];
           if (bookmark.url.includes("%s")) {
             this.promptForParameter(bookmark);
           } else {
