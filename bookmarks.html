@@ -1,379 +1,420 @@
-<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-
-<div id="app">
-  <div class="query-container">
-    <input ref="query" v-model="query" @keydown.enter="goToFirstBookmark" class="query">
-  </div>
-  <div class="tag-groups">
-    <ul>
-      <li v-for="(group, tag) in sortedGroupedBookmarks" :key="tag" class="tag-group">
-        <div class="tag-name">{{ tag }}</div>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bookmarks</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <div class="query-container">
+        <input
+          ref="query"
+          v-model="query"
+          @keydown.enter="goToFirstBookmark"
+          class="query"
+        />
+      </div>
+      <div class="tag-groups">
         <ul>
-          <li v-for="(bookmark, name) in group" :key="name" class="item">
-            <a :href="bookmark.url" @click.prevent="navigate(bookmark)">{{ name }}</a>
-            <template v-if="bookmark.url.includes('%s')">
-              <span style="display: none">
-                <button @click="promptForParameter(bookmark)">Go</button>
-              </span>
-            </template>
+          <li
+            v-for="(group, tag) in sortedGroupedBookmarks"
+            :key="tag"
+            class="tag-group"
+          >
+            <div class="tag-name">{{ tag }}</div>
+            <ul>
+              <li v-for="(bookmark, name) in group" :key="name" class="item">
+                <a :href="bookmark.url" @click.prevent="navigate(bookmark)"
+                  >{{ name }}</a
+                >
+                <template v-if="bookmark.url.includes('%s')">
+                  <span style="display: none">
+                    <button @click="promptForParameter(bookmark)">Go</button>
+                  </span>
+                </template>
+              </li>
+            </ul>
           </li>
         </ul>
-      </li>
-    </ul>
-  </div>
-</div>
+      </div>
+    </div>
 
-<script>
-  const bookmarks = {
-    "ChatGPT": {
-      "url": "https://chat.openai.com/chat",
-      "tags": ["🧰 Tools"],
-      "keywords": ["cg"]
-    },
-    "Twitter": {
-      "url": "https://mobile.twitter.com/home",
-      "tags": ["🧑 SNS"],
-      "keywords": ["tw"]
-    },
-    "GitHub": {
-      "url": "https://github.com/",
-      "tags": ["👨‍💻 Development", "📦 Tools"],
-      "keywords": ["gh"]
-    },
-    "Google": {
-      "url": "https://www.google.com/search?q=%s",
-      "tags": ["🔍 Search", "🌍 Web"],
-      "keywords": ["gg"]
-    },
-    "Wikipedia": {
-      "url": "https://www.wikipedia.org/",
-      "tags": ["📚 Reference", "🌍 Web"],
-      "keywords": ["wp"]
-    },
-    "YouTube": {
-      "url": "https://www.youtube.com/",
-      "tags": ["📹 Video", "🎬 Entertainment"],
-      "keywords": ["yt"]
-    },
-    "Reddit": {
-      "url": "https://www.reddit.com/",
-      "tags": ["🗣️ Discussion", "🧑 SNS"],
-      "keywords": ["rd"]
-    },
-    "Amazon": {
-      "url": "https://www.amazon.com/",
-      "tags": ["🛍️ Shopping", "📦 Tools"],
-      "keywords": ["amz"]
-    },
-    "LinkedIn": {
-      "url": "https://www.linkedin.com/",
-      "tags": ["👨‍💼 Professional", "🧑 SNS"],
-      "keywords": ["li"]
-    },
-    "Netflix": {
-      "url": "https://www.netflix.com/",
-      "tags": ["🎥 Streaming", "🎬 Entertainment"],
-      "keywords": ["nf"]
-    },
-    "Dropbox": {
-      "url": "https://www.dropbox.com/",
-      "tags": ["💾 Storage", "📦 Tools"],
-      "keywords": ["db"]
-    },
-    "Pinterest": {
-      "url": "https://www.pinterest.com/",
-      "tags": ["📌 Inspiration", "🧑 SNS"],
-      "keywords": ["pt"]
-    },
-    "Slack": {
-      "url": "https://slack.com/",
-      "tags": ["💬 Communication", "👨‍💼 Professional"],
-      "keywords": []
-    },
-    "Twitch": {
-      "url": "https://www.twitch.tv/",
-      "tags": ["🎮 Gaming", "🎬 Entertainment"],
-      "keywords": ["tc"]
-    },
-    "Zoom": {
-      "url": "https://zoom.us/",
-      "tags": ["👥 Meetings", "👨‍💼 Professional"],
-      "keywords": []
-    },
-    "Discord": {
-      "url": "https://discord.com/",
-      "tags": ["💬 Communication", "🎮 Gaming"],
-      "keywords": ["dd"]
-    },
-    "Google Drive": {
-      "url": "https://www.google.com/drive/",
-      "tags": ["💾 Storage", "📦 Tools"],
-      "keywords": ["gd"]
-    },
-    "Hulu": {
-      "url": "https://www.hulu.com/",
-      "tags": ["🎥 Streaming", "🎬 Entertainment"],
-      "keywords": ["hl"]
-    },
-    "Instagram": {
-      "url": "https://www.instagram.com/",
-      "tags": ["📷 Photos", "🧑 SNS"],
-      "keywords": ["ig"]
-    },
-    "Notion": {
-      "url": "https://www.notion.so/",
-      "tags": ["📝 Productivity", "📦 Tools"],
-      "keywords": ["nt"]
-    },
-    "Spotify": {
-      "url": "https://www.spotify.com/",
-      "tags": ["🎧 Music", "🎬 Entertainment"],
-      "keywords": []
-    },
-    "TikTok": {
-      "url": "https://www.tiktok.com/",
-      "tags": ["📹 Short-form Video", "🧑 SNS"],
-      "keywords": ["tt"]
-    },
-    "Goodreads": {
-      "url": "https://www.goodreads.com/",
-      "tags": ["📚 Books", "📝 Productivity"],
-      "keywords": []
-    },
-    "Last.fm": {
-      "url": "https://www.last.fm/",
-      "tags": ["🎧 Music", "📊 Statistics"],
-      "keywords": []
-    },
-    "Letterboxd": {
-      "url": "https://letterboxd.com/",
-      "tags": ["🎥 Movies", "📊 Statistics"],
-      "keywords": []
-    },
-    "Meetup": {
-      "url": "https://www.meetup.com/",
-      "tags": ["👥 Community", "👨‍💼 Professional"],
-      "keywords": []
-    },
-    "New York Times": {
-      "url": "https://www.nytimes.com/",
-      "tags": ["📰 News", "📊 Statistics"],
-      "keywords": []
-    },
-    "Replit": {
-      "url": "https://replit.com/",
-      "tags": ["💻 Programming", "📦 Tools"],
-      "keywords": []
-    },
-    "SoundCloud": {
-      "url": "https://soundcloud.com/",
-      "tags": ["🎧 Music", "📊 Statistics"],
-      "keywords": []
-    },
-    "Untappd": {
-      "url": "https://untappd.com/",
-      "tags": ["🍺 Beer", "📊 Statistics"],
-      "keywords": []
-    },
-    "Archive of Our Own": {
-      "url": "https://archiveofourown.org/",
-      "tags": ["📚 Fanfiction", "🧑 SNS"],
-      "keywords": []
-    }
-  }
-  const { createApp } = Vue
+    <script>
+      const bookmarks = {
+        ChatGPT: {
+          url: "https://chat.openai.com/chat",
+          tags: ["🧰 Tools"],
+          keywords: ["cg"],
+        },
+        Twitter: {
+          url: "https://mobile.twitter.com/home",
+          tags: ["🧑 SNS"],
+          keywords: ["tw"],
+        },
+        GitHub: {
+          url: "https://github.com/",
+          tags: ["👨‍💻 Development", "📦 Tools"],
+          keywords: ["gh"],
+        },
+        Google: {
+          url: "https://www.google.com/search?q=%s",
+          tags: ["🔍 Search", "🌍 Web"],
+          keywords: ["gg"],
+        },
+        Wikipedia: {
+          url: "https://www.wikipedia.org/",
+          tags: ["📚 Reference", "🌍 Web"],
+          keywords: ["wp"],
+        },
+        YouTube: {
+          url: "https://www.youtube.com/",
+          tags: ["📹 Video", "🎬 Entertainment"],
+          keywords: ["yt"],
+        },
+        Reddit: {
+          url: "https://www.reddit.com/",
+          tags: ["🗣️ Discussion", "🧑 SNS"],
+          keywords: ["rd"],
+        },
+        Amazon: {
+          url: "https://www.amazon.com/",
+          tags: ["🛍️ Shopping", "📦 Tools"],
+          keywords: ["amz"],
+        },
+        LinkedIn: {
+          url: "https://www.linkedin.com/",
+          tags: ["👨‍💼 Professional", "🧑 SNS"],
+          keywords: ["li"],
+        },
+        Netflix: {
+          url: "https://www.netflix.com/",
+          tags: ["🎥 Streaming", "🎬 Entertainment"],
+          keywords: ["nf"],
+        },
+        Dropbox: {
+          url: "https://www.dropbox.com/",
+          tags: ["💾 Storage", "📦 Tools"],
+          keywords: ["db"],
+        },
+        Pinterest: {
+          url: "https://www.pinterest.com/",
+          tags: ["📌 Inspiration", "🧑 SNS"],
+          keywords: ["pt"],
+        },
+        Slack: {
+          url: "https://slack.com/",
+          tags: ["💬 Communication", "👨‍💼 Professional"],
+          keywords: [],
+        },
+        Twitch: {
+          url: "https://www.twitch.tv/",
+          tags: ["🎮 Gaming", "🎬 Entertainment"],
+          keywords: ["tc"],
+        },
+        Zoom: {
+          url: "https://zoom.us/",
+          tags: ["👥 Meetings", "👨‍💼 Professional"],
+          keywords: [],
+        },
+        Discord: {
+          url: "https://discord.com/",
+          tags: ["💬 Communication", "🎮 Gaming"],
+          keywords: ["dd"],
+        },
+        "Google Drive": {
+          url: "https://www.google.com/drive/",
+          tags: ["💾 Storage", "📦 Tools"],
+          keywords: ["gd"],
+        },
+        Hulu: {
+          url: "https://www.hulu.com/",
+          tags: ["🎥 Streaming", "🎬 Entertainment"],
+          keywords: ["hl"],
+        },
+        Instagram: {
+          url: "https://www.instagram.com/",
+          tags: ["📷 Photos", "🧑 SNS"],
+          keywords: ["ig"],
+        },
+        Notion: {
+          url: "https://www.notion.so/",
+          tags: ["📝 Productivity", "📦 Tools"],
+          keywords: ["nt"],
+        },
+        Spotify: {
+          url: "https://www.spotify.com/",
+          tags: ["🎧 Music", "🎬 Entertainment"],
+          keywords: [],
+        },
+        TikTok: {
+          url: "https://www.tiktok.com/",
+          tags: ["📹 Short-form Video", "🧑 SNS"],
+          keywords: ["tt"],
+        },
+        Goodreads: {
+          url: "https://www.goodreads.com/",
+          tags: ["📚 Books", "📝 Productivity"],
+          keywords: [],
+        },
+        "Last.fm": {
+          url: "https://www.last.fm/",
+          tags: ["🎧 Music", "📊 Statistics"],
+          keywords: [],
+        },
+        Letterboxd: {
+          url: "https://letterboxd.com/",
+          tags: ["🎥 Movies", "📊 Statistics"],
+          keywords: [],
+        },
+        Meetup: {
+          url: "https://www.meetup.com/",
+          tags: ["👥 Community", "👨‍💼 Professional"],
+          keywords: [],
+        },
+        "New York Times": {
+          url: "https://www.nytimes.com/",
+          tags: ["📰 News", "📊 Statistics"],
+          keywords: [],
+        },
+        Replit: {
+          url: "https://replit.com/",
+          tags: ["💻 Programming", "📦 Tools"],
+          keywords: [],
+        },
+        SoundCloud: {
+          url: "https://soundcloud.com/",
+          tags: ["🎧 Music", "📊 Statistics"],
+          keywords: [],
+        },
+        Untappd: {
+          url: "https://untappd.com/",
+          tags: ["🍺 Beer", "📊 Statistics"],
+          keywords: [],
+        },
+        "Archive of Our Own": {
+          url: "https://archiveofourown.org/",
+          tags: ["📚 Fanfiction", "🧑 SNS"],
+          keywords: [],
+        },
+      };
+      const { createApp } = Vue;
 
-  createApp({
-    data() {
-      return {
-        query: '',
-        bookmarks
-      }
-    },
-    mounted() {
-      this.$refs.query.focus()
-    },
-    computed: {
-      filteredBookmarks() {
-        const queryWords = this.query.toLowerCase().split(/\s+/)
-        return Object.entries(this.bookmarks).reduce((result, [name, bookmark]) => {
-          const nameMatches = queryWords.every(word => name.toLowerCase().includes(word))
-          const keywordMatches = queryWords.every(word => bookmark.keywords.some(keyword => keyword.toLowerCase().includes(word)))
-          if (nameMatches || keywordMatches) {
-            result[name] = bookmark
-          }
-          return result
-        }, {})
-      },
-      groupedBookmarks() {
-        let groups = {}
-        for (let [name, bookmark] of Object.entries(this.filteredBookmarks)) {
-          for (let tag of bookmark.tags) {
-            if (!groups[tag]) {
-              groups[tag] = {}
+      createApp({
+        data() {
+          return {
+            query: "",
+            bookmarks,
+          };
+        },
+        mounted() {
+          this.$refs.query.focus();
+        },
+        computed: {
+          filteredBookmarks() {
+            const queryWords = this.query.toLowerCase().split(/\s+/);
+            return Object.entries(this.bookmarks).reduce(
+              (result, [name, bookmark]) => {
+                const nameMatches = queryWords.every((word) =>
+                  name.toLowerCase().includes(word)
+                );
+                const keywordMatches = queryWords.every((word) =>
+                  bookmark.keywords.some((keyword) =>
+                    keyword.toLowerCase().includes(word)
+                  )
+                );
+                if (nameMatches || keywordMatches) {
+                  result[name] = bookmark;
+                }
+                return result;
+              },
+              {}
+            );
+          },
+          groupedBookmarks() {
+            let groups = {};
+            for (let [name, bookmark] of Object.entries(
+              this.filteredBookmarks
+            )) {
+              for (let tag of bookmark.tags) {
+                if (!groups[tag]) {
+                  groups[tag] = {};
+                }
+                groups[tag][name] = bookmark;
+              }
             }
-            groups[tag][name] = bookmark
-          }
-        }
-        return groups
-      },
-      sortedGroupedBookmarks() {
-        const removeEmojis = str => str.replace(/[\u{1F000}-\u{1F6FF}]/gu, '');
-        const sortedGroups = Object.keys(this.groupedBookmarks).sort((a, b) => {
-          return removeEmojis(a).localeCompare(removeEmojis(b));
-        });
-        const sortedBookmarks = {};
-        for (let group of sortedGroups) {
-          sortedBookmarks[group] = Object.keys(this.groupedBookmarks[group]).sort((a, b) => {
-            return removeEmojis(a).localeCompare(removeEmojis(b));
-          }).reduce((obj, key) => {
-            obj[key] = this.groupedBookmarks[group][key];
-            return obj;
-          }, {});
-        }
-        return sortedBookmarks;
+            return groups;
+          },
+          sortedGroupedBookmarks() {
+            const removeEmojis = (str) =>
+              str.replace(/[\u{1F000}-\u{1F6FF}]/gu, "");
+            const sortedGroups = Object.keys(this.groupedBookmarks).sort(
+              (a, b) => {
+                return removeEmojis(a).localeCompare(removeEmojis(b));
+              }
+            );
+            const sortedBookmarks = {};
+            for (let group of sortedGroups) {
+              sortedBookmarks[group] = Object.keys(this.groupedBookmarks[group])
+                .sort((a, b) => {
+                  return removeEmojis(a).localeCompare(removeEmojis(b));
+                })
+                .reduce((obj, key) => {
+                  obj[key] = this.groupedBookmarks[group][key];
+                  return obj;
+                }, {});
+            }
+            return sortedBookmarks;
+          },
+        },
+        methods: {
+          goToFirstBookmark() {
+            const sortedGroups = Object.keys(this.sortedGroupedBookmarks);
+            if (sortedGroups.length > 0) {
+              const group = this.sortedGroupedBookmarks[sortedGroups[0]];
+              const bookmarks = Object.values(group);
+              const bookmark = bookmarks[0];
+              if (bookmark.url.includes("%s")) {
+                this.promptForParameter(bookmark);
+              } else {
+                window.location.href = bookmark.url;
+              }
+            }
+          },
+          promptForParameter(bookmark) {
+            const parameter = prompt(`Enter a value for parameter:`);
+            if (parameter !== null) {
+              const url = bookmark.url.replace(
+                "%s",
+                encodeURIComponent(parameter)
+              );
+              window.location.href = url;
+            }
+          },
+          navigate(bookmark) {
+            if (bookmark.url.includes("%s")) {
+              this.promptForParameter(bookmark);
+            } else {
+              window.location.href = bookmark.url;
+            }
+          },
+        },
+      }).mount("#app");
+    </script>
+
+    <style>
+      :root {
+        --primary: red;
+        --space-s: 8px;
+        --space-m: 16px;
+        --space-l: 24px;
       }
-    },
-    methods: {
-      goToFirstBookmark() {
-        const sortedGroups = Object.keys(this.sortedGroupedBookmarks);
-        if (sortedGroups.length > 0) {
-          const group = this.sortedGroupedBookmarks[sortedGroups[0]];
-          const bookmarks = Object.values(group);
-          const bookmark = bookmarks[0];
-          if (bookmark.url.includes("%s")) {
-            this.promptForParameter(bookmark);
-          } else {
-            window.location.href = bookmark.url;
-          }
+
+      body {
+        font-family: "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro",
+          "メイリオ", Meiryo, "ＭＳ Ｐゴシック", sans-serif;
+        margin: 0;
+        background-color: skyblue;
+      }
+
+      .query-container {
+        position: sticky;
+        top: 0;
+        box-shadow: 1px 1px 1px lightgray;
+        & input {
+          border: 0;
         }
-      },
-      promptForParameter(bookmark) {
-        const parameter = prompt(`Enter a value for parameter:`);
-        if (parameter !== null) {
-          const url = bookmark.url.replace("%s", encodeURIComponent(parameter));
-          window.location.href = url;
-        }
-      },
-      navigate(bookmark) {
-        if (bookmark.url.includes("%s")) {
-          this.promptForParameter(bookmark);
-        } else {
-          window.location.href = bookmark.url;
+
+        & input:focus {
+          outline: none;
         }
       }
-    }
-  }).mount('#app')
-</script>
 
-<style>
-  :root {
-    --primary: red;
-    --space-s: 8px;
-    --space-m: 16px;
-  }
+      .query-container:before {
+        content: "🔍";
+        width: 16px;
+        height: 16px;
+        display: inline-block;
+        position: absolute;
+        top: 12px;
+        left: 16px;
+      }
 
-  body {
-    font-family: "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", "メイリオ", Meiryo, "ＭＳ Ｐゴシック", sans-serif;
-    margin: 0;
-  }
+      .query {
+        /* border-radius: 10px; */
+        border: 1px solid lightgray;
+        font-size: large;
+        /* padding: var(--space-m); */
+        padding: 16px 16px 16px 48px;
+        width: 100%;
+      }
 
-  .query-container {
-    position: sticky;
-    top: 0;
-    box-shadow: 1px 1px 1px lightgray;
-    & input {
-      border: 0;
-    }
+      .tag-groups {
+        padding: var(--space-l) var(--space-l) var(--space-l) var(--space-l);
+      }
 
-    & input:focus {
-      outline: none;
-    }
-  }
+      .tag-group {
+        display: inline-block;
+        margin: var(--space-m);
+        padding: var(--space-m);
+        border-radius: 16px;
+        background-color: #fff;
+        vertical-align: top;
+        width: calc(100% - 40px);
+        box-shadow: 17px 20px 40px rgba(0, 0, 0, .21);
+      }
 
-  .query-container:before {
-    content: "🔍";
-    width: 16px;
-    height: 16px;
-    display: inline-block;
-    position: absolute;
-    top: 12px;
-    left: 16px;
-  }
+      .tag-name {
+        padding-bottom: var(--space-m);
+        font-weight: bold;
+      }
 
-  .query {
-    /* border-radius: 10px; */
-    border: 1px solid lightgray;
-    font-size: large;
-    /* padding: var(--space-m); */
-    padding: 16px 16px 16px 48px;
-    width: 100%;
-  }
+      .item {
+        list-style: none;
+      }
 
-  .tag-groups {
-    padding: 0 var(--space-m) var(--space-m) var(--space-s);
-  }
+      .item a {
+        text-decoration: none;
+        color: blue;
+      }
 
-  .tag-group {
-    display: inline-block;
-    margin: 8px;
-    padding: var(--space-m);
-    border-radius: 5px;
-    border: 1px solid #e8e8e8;
-    background-color: #f8f8f8;
-    vertical-align: top;
-    width: calc(100% - 40px);
-    box-shadow: 3px 3px 5px whitesmoke;
-  }
+      .item a:hover {
+        color: green;
+      }
 
-  .tag-name {
-    padding-bottom: var(--space-m);
-    font-weight: bold;
-  }
+      ul {
+        padding-inline-start: 0;
+      }
 
-  .item {
-    list-style: none;
-  }
+      .tag-groups > ul {
+        padding-inline-start: 0;
+        -moz-column-gap: 24px;
+        column-gap: 24px;
+        -moz-column-count: 4;
+        column-count: 4;
+      }
 
-  .item a {
-    text-decoration: none;
-    color: blue;
-  }
+      @media (min-width: 800px) and (max-width: 1120px) {
+        .tag-groups > ul {
+          -moz-column-count: 3;
+          column-count: 3;
+        }
+      }
 
-  .item a:hover {
-    color: green;
-  }
+      @media (min-width: 480px) and (max-width: 800px) {
+        .tag-groups > ul {
+          -moz-column-count: 2;
+          column-count: 2;
+        }
+      }
 
-  ul {
-    padding-inline-start: 0;
-  }
-
-  .tag-groups>ul {
-    padding-inline-start: 0;
-    -moz-column-gap: 10px;
-    column-gap: 10px;
-    -moz-column-count: 4;
-    column-count: 4;
-  }
-
-  @media (min-width: 800px) and (max-width: 1120px) {
-    .tag-groups>ul {
-      -moz-column-count: 3;
-      column-count: 3;
-    }
-  }
-
-  @media (min-width: 480px) and (max-width: 800px) {
-    .tag-groups>ul {
-      -moz-column-count: 2;
-      column-count: 2;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .tag-groups>ul {
-      -moz-column-count: 1;
-      column-count: 1;
-    }
-  }
-</style>
+      @media (max-width: 480px) {
+        .tag-groups > ul {
+          -moz-column-count: 1;
+          column-count: 1;
+        }
+      }
+    </style>
+  </body>
+</html>
