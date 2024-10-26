@@ -34,8 +34,18 @@ const app = Vue.createApp({
     };
   },
   computed: {
+    filteredBookmarks() {
+      const query = this.query.toLowerCase();
+      return Object.entries(this.bookmarks).filter(([name, bookmark]) => {
+        return (
+          name.toLowerCase().includes(query) ||
+          bookmark.tags.some(tag => tag.toLowerCase().includes(query)) ||
+          bookmark.keywords.some(keyword => keyword.toLowerCase().includes(query))
+        );
+      });
+    },
     sortedGroupedBookmarks() {
-      const grouped = this.groupBookmarksByTag();
+      const grouped = this.groupBookmarksByTag(this.filteredBookmarks);
       const sorted = {};
       Object.keys(grouped)
         .sort()
@@ -46,9 +56,9 @@ const app = Vue.createApp({
     }
   },
   methods: {
-    groupBookmarksByTag() {
+    groupBookmarksByTag(bookmarks) {
       const grouped = {};
-      for (const [name, bookmark] of Object.entries(this.bookmarks)) {
+      for (const [name, bookmark] of bookmarks) {
         for (const tag of bookmark.tags) {
           if (!grouped[tag]) {
             grouped[tag] = {};
@@ -61,7 +71,7 @@ const app = Vue.createApp({
     goToFirstBookmark() {
       const firstBookmark = this.filteredBookmarks[0];
       if (firstBookmark) {
-        this.navigate(firstBookmark);
+        this.navigate(firstBookmark[1]);
       }
     },
     navigate(bookmark) {
