@@ -123,4 +123,11 @@ const app = Vue.createApp({
   `
 });
 
-app.mount("#app");
+function createApp(element) {
+  if (!element) {
+    element = document.createElement('div');
+    element.id = 'bookmark-app';
+    document.body.appendChild(element);
+  }
+  app.mount(element);
+}
