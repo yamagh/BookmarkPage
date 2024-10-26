@@ -41,7 +41,7 @@ body {
   font-size: large;
   /* padding: var(--space-m); */
   padding: 16px 16px 16px 48px;
-  width: 100%;
+  width: calc(100% - 64px);
 }
 
 .tag-groups {
