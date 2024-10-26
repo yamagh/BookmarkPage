@@ -1,37 +1,37 @@
-const BookmarkApp = {
-  bookmarks: {
-    "ChatGPT": {
-      "url": "https://chat.openai.com/chat",
-      "tags": ["🧰 Tools"],
-      "keywords": ["cg"]
-    },
-    "Google": {
-      "url": "https://www.google.com/search?q=%s",
-      "tags": ["🔍 Search", "🌍 Web"],
-      "keywords": ["gg", "search"]
-    },
-    "Wikipedia": {
-      "url": "https://en.wikipedia.org/wiki/%s",
-      "tags": ["📚 Education", "🌍 Web"],
-      "keywords": ["wiki", "education"]
-    },
-    "GitHub": {
-      "url": "https://github.com/",
-      "tags": ["👨‍💻 Development", "📦 Tools"],
-      "keywords": ["gh", "code"]
-    },
-    "Twitter": {
-      "url": "https://twitter.com/home",
-      "tags": ["🧑 SNS"],
-      "keywords": ["twitter", "social"]
-    }
+const bookmarks = {
+  "ChatGPT": {
+    "url": "https://chat.openai.com/chat",
+    "tags": ["🧰 Tools"],
+    "keywords": ["cg"]
   },
+  "Google": {
+    "url": "https://www.google.com/search?q=%s",
+    "tags": ["🔍 Search", "🌍 Web"],
+    "keywords": ["gg", "search"]
+  },
+  "Wikipedia": {
+    "url": "https://en.wikipedia.org/wiki/%s",
+    "tags": ["📚 Education", "🌍 Web"],
+    "keywords": ["wiki", "education"]
+  },
+  "GitHub": {
+    "url": "https://github.com/",
+    "tags": ["👨‍💻 Development", "📦 Tools"],
+    "keywords": ["gh", "code"]
+  },
+  "Twitter": {
+    "url": "https://twitter.com/home",
+    "tags": ["🧑 SNS"],
+    "keywords": ["twitter", "social"]
+  }
+};
 
+const BookmarkApp = {
   app: Vue.createApp({
     data() {
       return {
         query: "",
-        bookmarks: BookmarkApp.bookmarks
+        bookmarks: bookmarks
       };
     },
     computed: {
