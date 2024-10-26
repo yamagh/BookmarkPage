@@ -87,7 +87,40 @@ const app = Vue.createApp({
         window.location.href = url;
       }
     }
-  }
+  },
+  template: `
+    <div class="query-container">
+      <input
+        ref="query"
+        v-model="query"
+        @keydown.enter="goToFirstBookmark"
+        class="query"
+      />
+    </div>
+    <div class="tag-groups">
+      <ul>
+        <li
+          v-for="(group, tag) in sortedGroupedBookmarks"
+          :key="tag"
+          class="tag-group"
+        >
+          <div class="tag-name">{{ tag }}</div>
+          <ul>
+            <li v-for="(bookmark, name) in group" :key="name" class="item">
+              <a :href="bookmark.url" @click.prevent="navigate(bookmark)"
+                >{{ name }}</a
+              >
+              <template v-if="bookmark.url.includes('%s')">
+                <span style="display: none">
+                  <button @click="promptForParameter(bookmark)">Go</button>
+                </span>
+              </template>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  `
 });
 
 app.mount("#app");
