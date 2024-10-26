@@ -88,7 +88,13 @@ const BookmarkApp = {
           const url = bookmark.url.replace("%s", parameter);
           window.location.href = url;
         }
+      },
+      focusQueryInput() {
+        this.$refs.query.focus();
       }
+    },
+    mounted() {
+      this.focusQueryInput();
     },
     template: `
       <div class="query-container">
