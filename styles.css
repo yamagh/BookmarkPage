@@ -53,7 +53,7 @@ body {
   margin: var(--space-m);
   padding: var(--space-m);
   border-radius: 16px;
-  background-color: #fff;
+  background-color: rgba(255, 255, 255, 0.7);
   vertical-align: top;
   width: calc(100% - 40px);
   box-shadow: 17px 20px 40px rgba(0, 0, 0, .21);
