@@ -9,7 +9,7 @@ body {
   font-family: "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro",
     "メイリオ", Meiryo, "ＭＳ Ｐゴシック", sans-serif;
   margin: 0;
-  background-color: skyblue;
+  background: linear-gradient(to right, #f0f8ff, #e6e6fa, #ffe4e1);
 }
 
 .query-container {
