@@ -77,10 +77,11 @@ const BookmarkApp = {
         }
       },
       navigate(bookmark) {
-        const url = bookmark.url.includes("%s")
-          ? bookmark.url.replace("%s", this.query)
-          : bookmark.url;
-        window.location.href = url;
+        if (bookmark.url.includes("%s")) {
+          this.promptForParameter(bookmark);
+        } else {
+          window.location.href = bookmark.url;
+        }
       },
       promptForParameter(bookmark) {
         const parameter = prompt("Enter a value:");
