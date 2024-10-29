@@ -3,7 +3,7 @@ const bookmarks = {
     "url": "https://chat.openai.com/chat",
     "tags": ["🧰 Tools"],
     "keywords": ["cg"],
-    "label": "ChatGPT ChatGPT ChatGPT ChatGPT ChatGPT "
+    "label": "ChatGPT"
   },
   "Google": {
     "url": "https://www.google.com/search?q=%s",
