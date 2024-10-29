@@ -66,11 +66,14 @@ body {
 
 .item {
   list-style: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .item a {
   text-decoration: none;
   color: blue;
+  white-space: nowrap;
 }
 
 .item a:hover {
