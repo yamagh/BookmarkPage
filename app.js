@@ -3,7 +3,8 @@ const BookmarkApp = {
     data() {
       return {
         query: "",
-        bookmarks: bookmarks
+        bookmarks: bookmarks,
+        buttonGroup: [1, 2, 3, 4]
       };
     },
     computed: {
@@ -64,6 +65,9 @@ const BookmarkApp = {
       },
       focusQueryInput() {
         this.$refs.query.focus();
+      },
+      handleButtonClick(buttonLabel) {
+        console.log(`Button ${buttonLabel} clicked`);
       }
     },
     mounted() {
@@ -77,6 +81,15 @@ const BookmarkApp = {
           @keydown.enter="goToFirstBookmark"
           class="query"
         />
+      </div>
+      <div class="button-group">
+        <button
+          v-for="button in buttonGroup"
+          :key="button"
+          @click="handleButtonClick(button)"
+        >
+          {{ button }}
+        </button>
       </div>
       <div class="tag-groups">
         <ul>
