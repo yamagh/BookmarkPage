@@ -2,27 +2,32 @@ const bookmarks = {
   "ChatGPT": {
     "url": "https://chat.openai.com/chat",
     "tags": ["🧰 Tools"],
-    "keywords": ["cg"]
+    "keywords": ["cg"],
+    "label": "ChatGPT"
   },
   "Google": {
     "url": "https://www.google.com/search?q=%s",
     "tags": ["🔍 Search", "🌍 Web"],
-    "keywords": ["gg", "search"]
+    "keywords": ["gg", "search"],
+    "label": "Google Search"
   },
   "Wikipedia": {
     "url": "https://en.wikipedia.org/wiki/%s",
     "tags": ["📚 Education", "🌍 Web"],
-    "keywords": ["wiki", "education"]
+    "keywords": ["wiki", "education"],
+    "label": "Wikipedia"
   },
   "GitHub": {
     "url": "https://github.com/",
     "tags": ["👨‍💻 Development", "📦 Tools"],
-    "keywords": ["gh", "code"]
+    "keywords": ["gh", "code"],
+    "label": "GitHub"
   },
   "Twitter": {
     "url": "https://twitter.com/home",
     "tags": ["🧑 SNS"],
-    "keywords": ["twitter", "social"]
+    "keywords": ["twitter", "social"],
+    "label": "Twitter"
   }
 };
 
@@ -117,7 +122,7 @@ const BookmarkApp = {
             <ul>
               <li v-for="(bookmark, name) in group" :key="name" class="item">
                 <a :href="bookmark.url" @click.prevent="navigate(bookmark)"
-                  >{{ name }}</a
+                  >{{ bookmark.label || name }}</a
                 >
                 <template v-if="bookmark.url.includes('%s')">
                   <span style="display: none">
