@@ -70,13 +70,18 @@ const BookmarkApp = {
       this.focusQueryInput();
     },
     template: `
-      <div class="query-container">
-        <input
-          ref="query"
-          v-model="query"
-          @keydown.enter="goToFirstBookmark"
-          class="query"
-        />
+      <div class="action-bar">
+        <div class="action-left"></div>
+        <div class="action-query">
+          <div class="icon-search">🔍</div>
+          <input
+            ref="query"
+            v-model="query"
+            @keydown.enter="goToFirstBookmark"
+            class="query"
+          />
+        </div>
+        <div class="action-right"></div>
       </div>
       <div class="tag-groups">
         <ul>
@@ -85,19 +90,21 @@ const BookmarkApp = {
             :key="tag"
             class="tag-group"
           >
-            <div class="tag-name">{{ tag }}</div>
-            <ul>
-              <li v-for="(bookmark, name) in group" :key="name" class="item">
-                <a :href="bookmark.url" @click.prevent="navigate(bookmark)"
-                  >{{ bookmark.label || name }}</a
-                >
-                <template v-if="bookmark.url.includes('%s')">
-                  <span style="display: none">
-                    <button @click="promptForParameter(bookmark)">Go</button>
-                  </span>
-                </template>
-              </li>
-            </ul>
+            <div class="tag-content">
+              <div class="tag-name">{{ tag }}</div>
+              <ul>
+                <li v-for="(bookmark, name) in group" :key="name" class="item">
+                  <a :href="bookmark.url" @click.prevent="navigate(bookmark)"
+                    >{{ bookmark.label || name }}</a
+                  >
+                  <template v-if="bookmark.url.includes('%s')">
+                    <span style="display: none">
+                      <button @click="promptForParameter(bookmark)">Go</button>
+                    </span>
+                  </template>
+                </li>
+              </ul>
+            </div>
           </li>
         </ul>
       </div>
