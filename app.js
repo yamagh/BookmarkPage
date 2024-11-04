@@ -72,14 +72,16 @@ const BookmarkApp = {
     template: `
       <div class="action-bar">
         <div class="action-left"></div>
-        <div class="action-query">
-          <div class="icon-search">🔍</div>
-          <input
-            ref="query"
-            v-model="query"
-            @keydown.enter="goToFirstBookmark"
-            class="query"
-          />
+        <div class="action-center">
+          <div class="action-query">
+            <div class="icon-search">🔍</div>
+            <input
+              ref="query"
+              v-model="query"
+              @keydown.enter="goToFirstBookmark"
+              class="query"
+            />
+          </div>
         </div>
         <div class="action-right"></div>
       </div>
@@ -88,7 +90,7 @@ const BookmarkApp = {
           <li
             v-for="(group, tag) in sortedGroupedBookmarks"
             :key="tag"
-            class="tag-group"
+            class="tag"
           >
             <div class="tag-content">
               <div class="tag-name">{{ tag }}</div>
