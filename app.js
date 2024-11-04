@@ -43,9 +43,10 @@ const BookmarkApp = {
         return grouped;
       },
       goToFirstBookmark() {
-        const firstBookmark = this.filteredBookmarks[0];
+        const firstTagGroup = Object.values(this.sortedGroupedBookmarks)[0];
+        const firstBookmark = firstTagGroup ? Object.values(firstTagGroup)[0] : null;
         if (firstBookmark) {
-          this.navigate(firstBookmark[1]);
+          this.navigate(firstBookmark);
         }
       },
       navigate(bookmark) {
