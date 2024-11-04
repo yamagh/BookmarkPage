@@ -72,12 +72,13 @@ const BookmarkApp = {
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         const seed = `${year}${month}${day}`;
-        const imageUrl = `https://picsum.photos/seed/${seed}/480/272.webp?blur=10`;
+        const imageUrl = `https://picsum.photos/seed/${seed}/720/480.webp?blur=10`;
         const response = await fetch(imageUrl);
         const blob = await response.blob();
         const objectURL = URL.createObjectURL(blob);
         document.body.style.backgroundImage = `url(${objectURL})`;
         document.body.style.backgroundSize = 'cover';
+        document.body.style.height = '100vh';
       }
     },
     mounted() {
