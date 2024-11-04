@@ -17,7 +17,7 @@ body {
 .action-bar {
   display: flex;
   /* margin: var(--space-m); */
-  padding: var(--space-xl) 0;
+  padding: var(--space-xl) var(--space-m);
   justify-content: space-between;
   position: sticky;
   top: 0;
@@ -59,6 +59,15 @@ body {
   .action-right {
     width: 25vw;
     padding-left: var(--space-m);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    
+    .bookarklet {
+      font-size: xx-large;
+      text-decoration: none;
+      color: var(--primary);
+    }
   }
 }
 

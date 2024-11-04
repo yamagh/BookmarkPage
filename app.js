@@ -79,6 +79,35 @@ const BookmarkApp = {
         document.body.style.backgroundImage = `url(${objectURL})`;
         document.body.style.backgroundSize = 'cover';
         document.body.style.height = '100vh';
+      },
+      createBookmarklet() {
+        const code = `
+          (function() {
+            const pageInfo = {
+              label: document.title,
+              url: window.location.href,
+              tags: "",
+              keywords: ""
+            };
+            const json = JSON.stringify(pageInfo, null, 2);
+            const textarea = document.createElement('textarea');
+            textarea.value = json;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert('Page info copied to clipboard');
+          })();
+        `;
+        return `javascript:${encodeURIComponent(code)}`;
+      },
+      copyToClipboard(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
       }
     },
     mounted() {
@@ -99,7 +128,9 @@ const BookmarkApp = {
             />
           </div>
         </div>
-        <div class="action-right"></div>
+        <div class="action-right">
+          <a :href="createBookmarklet()" title="Drag and drop to browser bookmark bar." class="bookarklet">🔖</a>
+        </div>
       </div>
       <div class="tag-groups">
         <ul>
