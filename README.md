@@ -35,40 +35,38 @@ You can also navigate to a bookmark by clicking on its name in the list. If the 
 The application comes with a sample set of bookmarks, which are defined in the following format:
 
 ```js
-const BookmarkApp = {
-  bookmarks: {
-    "ChatGPT": {
-      "url": "https://chat.openai.com/chat",
-      "tags": ["🧰 Tools"],
-      "keywords": ["cg"],
-      "label": "ChatGPT"
-    },
-    "Google": {
-      "url": "https://www.google.com/search?q=%s",
-      "tags": ["🔍 Search", "🌍 Web"],
-      "keywords": ["gg", "search"],
-      "label": "Google Search"
-    },
-    "Wikipedia": {
-      "url": "https://en.wikipedia.org/wiki/%s",
-      "tags": ["📚 Education", "🌍 Web"],
-      "keywords": ["wiki", "education"],
-      "label": "Wikipedia"
-    },
-    "GitHub": {
-      "url": "https://github.com/",
-      "tags": ["👨‍💻 Development", "📦 Tools"],
-      "keywords": ["gh", "code"],
-      "label": "GitHub"
-    },
-    "Twitter": {
-      "url": "https://twitter.com/home",
-      "tags": ["🧑 SNS"],
-      "keywords": ["twitter", "social"],
-      "label": "Twitter"
-    }
+const bookmarks = [
+  {
+    "label": "ChatGPT",
+    "url": "https://chat.openai.com/chat",
+    "tags": ["🧰 Tools"],
+    "keywords": ["cg"]
+  },
+  {
+    "label": "Google Search",
+    "url": "https://www.google.com/search?q=%s",
+    "tags": ["🔍 Search", "🌍 Web"],
+    "keywords": ["gg", "search"]
+  },
+  {
+    "label": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/%s",
+    "tags": ["📚 Education", "🌍 Web"],
+    "keywords": ["wiki", "education"]
+  },
+  {
+    "label": "GitHub",
+    "url": "https://github.com/",
+    "tags": ["👨‍💻 Development", "📦 Tools"],
+    "keywords": ["gh", "code"]
+  },
+  {
+    "label": "Twitter",
+    "url": "https://twitter.com/home",
+    "tags": ["🧑 SNS"],
+    "keywords": ["twitter", "social"]
   }
-}
+];
 ```
 
 You can modify or add bookmarks as needed.

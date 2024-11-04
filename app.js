@@ -10,9 +10,9 @@ const BookmarkApp = {
       filteredBookmarks() {
         const queryParts = this.query.toLowerCase().split(" ");
         if (!this.bookmarks) return [];
-        return Object.entries(this.bookmarks).filter(([name, bookmark]) => {
+        return this.bookmarks.filter(bookmark => {
           return queryParts.every(query => 
-            name.toLowerCase().includes(query) ||
+            bookmark.label.toLowerCase().includes(query) ||
             bookmark.tags.some(tag => tag.toLowerCase().includes(query)) ||
             bookmark.keywords.some(keyword => keyword.toLowerCase().includes(query))
           );
@@ -32,19 +32,19 @@ const BookmarkApp = {
     methods: {
       groupBookmarksByTag(bookmarks) {
         const grouped = {};
-        for (const [name, bookmark] of bookmarks) {
+        for (const bookmark of bookmarks) {
           for (const tag of bookmark.tags) {
             if (!grouped[tag]) {
-              grouped[tag] = {};
+              grouped[tag] = [];
             }
-            grouped[tag][name] = bookmark;
+            grouped[tag].push(bookmark);
           }
         }
         return grouped;
       },
       goToFirstBookmark() {
         const firstTagGroup = Object.values(this.sortedGroupedBookmarks)[0];
-        const firstBookmark = firstTagGroup ? Object.values(firstTagGroup)[0] : null;
+        const firstBookmark = firstTagGroup ? firstTagGroup[0] : null;
         if (firstBookmark) {
           this.navigate(firstBookmark);
         }
@@ -91,7 +91,7 @@ const BookmarkApp = {
             };
             const json = JSON.stringify(pageInfo, null, 2);
             const textarea = document.createElement('textarea');
-            textarea.value = '"Name": ' + json + ',';
+            textarea.value = json + ',';
             document.body.appendChild(textarea);
             textarea.select();
             document.execCommand('copy');
@@ -142,9 +142,9 @@ const BookmarkApp = {
             <div class="tag-content">
               <div class="tag-name">{{ tag }}</div>
               <ul>
-                <li v-for="(bookmark, name) in group" :key="name" class="item">
+                <li v-for="bookmark in group" :key="bookmark.label" class="item">
                   <a :href="bookmark.url" @click.prevent="navigate(bookmark)"
-                    >{{ bookmark.label || name }}</a
+                    >{{ bookmark.label }}</a
                   >
                   <template v-if="bookmark.url.includes('%s')">
                     <span style="display: none">
