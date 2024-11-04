@@ -8,10 +8,10 @@ const BookmarkApp = {
     },
     computed: {
       filteredBookmarks() {
-        const query = this.query.toLowerCase();
+        const queryParts = this.query.toLowerCase().split(" ");
         if (!this.bookmarks) return [];
         return Object.entries(this.bookmarks).filter(([name, bookmark]) => {
-          return (
+          return queryParts.every(query => 
             name.toLowerCase().includes(query) ||
             bookmark.tags.some(tag => tag.toLowerCase().includes(query)) ||
             bookmark.keywords.some(keyword => keyword.toLowerCase().includes(query))
