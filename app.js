@@ -65,10 +65,24 @@ const BookmarkApp = {
       },
       focusQueryInput() {
         this.$refs.query.focus();
+      },
+      async fetchAndSetBackgroundImage() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const seed = `${year}${month}${day}`;
+        const imageUrl = `https://picsum.photos/seed/${seed}/480/272.webp?blur=10`;
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const objectURL = URL.createObjectURL(blob);
+        document.body.style.backgroundImage = `url(${objectURL})`;
+        document.body.style.backgroundSize = 'cover';
       }
     },
     mounted() {
       this.focusQueryInput();
+      this.fetchAndSetBackgroundImage();
     },
     template: `
       <div class="action-bar">
