@@ -90,6 +90,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: small;
+    padding-bottom: var(--space-s);
   }
   li.item a {
     text-decoration: none;
