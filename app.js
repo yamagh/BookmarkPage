@@ -91,7 +91,7 @@ const BookmarkApp = {
             };
             const json = JSON.stringify(pageInfo, null, 2);
             const textarea = document.createElement('textarea');
-            textarea.value = json;
+            textarea.value = '"Name": ' + json + ',';
             document.body.appendChild(textarea);
             textarea.select();
             document.execCommand('copy');
