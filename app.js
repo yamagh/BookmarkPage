@@ -3,7 +3,7 @@ const BookmarkApp = {
     data() {
       return {
         query: "",
-        bookmarks: bookmarks
+        bookmarks: this.normalizeBookmarks(bookmarks)
       };
     },
     computed: {
@@ -30,6 +30,17 @@ const BookmarkApp = {
       }
     },
     methods: {
+      normalizeBookmarks(bookmarks) {
+        return bookmarks.map(bookmark => {
+          if (typeof bookmark.keywords === 'string') {
+            bookmark.keywords = [bookmark.keywords];
+          }
+          if (typeof bookmark.tags === 'string') {
+            bookmark.tags = [bookmark.tags];
+          }
+          return bookmark;
+        });
+      },
       groupBookmarksByTag(bookmarks) {
         const grouped = {};
         for (const bookmark of bookmarks) {

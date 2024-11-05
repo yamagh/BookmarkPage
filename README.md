@@ -69,6 +69,8 @@ const bookmarks = [
 ];
 ```
 
+The `keywords` and `tags` fields can be either strings or arrays. The application will normalize them to arrays before using them.
+
 You can modify or add bookmarks as needed.
 
 ## License
