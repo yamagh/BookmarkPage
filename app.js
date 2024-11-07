@@ -119,6 +119,11 @@ const BookmarkApp = {
         textarea.select();
         document.execCommand('copy');
         document.body.removeChild(textarea);
+      },
+      copyBookmarksToClipboard() {
+        const json = JSON.stringify(this.bookmarks, null, 2);
+        this.copyToClipboard(json);
+        alert('All bookmarks copied to clipboard as JSON');
       }
     },
     mounted() {
@@ -140,7 +145,8 @@ const BookmarkApp = {
           </div>
         </div>
         <div class="action-right">
-          <a :href="createBookmarklet()" title="Drag and drop to browser bookmark bar." class="bookarklet">🔖</a>
+          <a :href="createBookmarklet()" title="Drag and drop to browser bookmark bar." class="icon">🔖</a>
+          <a @click="copyBookmarksToClipboard" class="icon" title="Copy all bookmarks as JSON">💾</a>
         </div>
       </div>
       <div class="tag-groups">

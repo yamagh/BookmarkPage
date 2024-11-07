@@ -63,10 +63,11 @@ body {
     align-items: center;
     justify-content: flex-end;
     
-    .bookarklet {
+    .icon {
       font-size: xx-large;
       text-decoration: none;
       color: var(--primary);
+      cursor: pointer;
     }
   }
 }
