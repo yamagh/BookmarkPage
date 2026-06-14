@@ -1,17 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bookmarks</title>
+<head>
+     <script>(function(){try{var t=localStorage.getItem('theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+   <meta charset="UTF-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <title>Bookmarks</title>
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+   <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div id="bookmark-app"></div>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
     <script src="bookmarks.js"></script>
-    <script src="app.js"></script>
-    <script>
-      BookmarkApp.createApp();
-    </script>
-  </body>
+    <script src="src/utils/bookmark-utils.js"></script>
+    <script src="src/utils/toast-utils.js"></script>
+    <script src="src/services/navigation-service.js"></script>
+    <script src="src/services/clipboard-service.js"></script>
+    <script src="src/AppComponent.js"></script>
+    <script src="src/app.js"></script>
+</body>
 </html>
