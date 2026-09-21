@@ -1141,12 +1141,22 @@ window.AppComponent = {
       },
 
     downloadBookmarks() {
-      const content = window.BookmarkUtils.serializeBookmarks(this.bookmarks);
-      window.DownloadService.download('bookmarks.js', content, 'text/javascript');
+      // Download the current page as bookmarks.html, with the saved bookmark
+      // list serialized into the embedded `const bookmarks` array.
+      fetch(window.location.href, { cache: 'no-store' })
+        .then(res => res.text())
+        .then(html => {
+          const content = window.BookmarkUtils.serializeBookmarks(this.bookmarks);
+          const updatedHtml = html.replace(/const bookmarks = \[[\s\S]*?\];\n/, content);
+          window.DownloadService.download('bookmarks.html', updatedHtml, 'text/html');
+        })
+        .catch(() => {
+          window.ToastUtils.toast('Download failed');
+        });
       },
 
     resetBookmarks() {
-      if (!confirm('Reset to the original bookmarks.js? Your saved edits will be cleared.')) return;
+      if (!confirm('Reset to the original bookmarks.html? Your saved edits will be cleared.')) return;
       this.bookmarks = window.BookmarkUtils.cloneBookmarks(this.originalBookmarks);
       window.BookmarkStore.save(this.bookmarks);
       window.ToastUtils.toast('Reset to original');
@@ -1179,7 +1189,7 @@ window.AppComponent = {
        </header>
        <div class="manage-bar">
            <button class="manage-btn" @click="addBookmark">+ New</button>
-           <button class="manage-btn" @click="downloadBookmarks">↓ bookmarks.js</button>
+           <button class="manage-btn" @click="downloadBookmarks">↓ bookmarks.html</button>
            <button class="manage-btn manage-btn--muted" @click="resetBookmarks">Reset</button>
        </div>
 
