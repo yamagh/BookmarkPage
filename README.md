@@ -22,7 +22,7 @@ To run this application, you need to have the following installed on your system
     cd bookmark-search-app
     ```
 
-3. Open the index.html file in your web browser.
+3. Open the bookmarks.html file in your web browser.
 
 ## Usage
 
