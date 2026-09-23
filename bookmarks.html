@@ -512,7 +512,7 @@ body::after {
    TAG GROUPS — hairline-edged sections, numbered
      ============================================ */
 .tag-groups > ul {
-  columns: var(--columns, 3) var(--column-gap, 32px);
+  columns: 1;
   list-style: none;
 }
 
@@ -953,9 +953,6 @@ li.item:hover .item-actions {
 /* ============================================
    RESPONSIVE
      ============================================ */
-@media (min-width: 1200px) {
-  .tag-groups > ul { --columns: 4; }
-}
 
 @media (max-width: 900px) {
   .app-root {
@@ -981,17 +978,12 @@ li.item:hover .item-actions {
     flex: 0 0 auto;
     background-size: 0 1px;
   }
-  .tag-groups > ul { --columns: 2; }
 }
 
 @media (max-width: 768px) {
   .app-root { padding: var(--space-l) var(--space-m); }
-  .tag-groups > ul { --columns: 2; }
 }
 
-@media (max-width: 480px) {
-  .tag-groups > ul { --columns: 1; }
-}
 
 </style>
 </head>
