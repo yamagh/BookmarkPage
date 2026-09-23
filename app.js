@@ -200,6 +200,11 @@ window.AppComponent = {
             <span>{{ tagIndex.length }} tags</span>
           </div>
 
+            <div class="rail-actions">
+              <button class="manage-btn" @click="downloadBookmarks">↓ bookmarks.js</button>
+              <button class="manage-btn manage-btn--muted" @click="resetBookmarks">Reset</button>
+            </div>
+
           <button class="theme-toggle" :title="'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' mode'" @click="toggleTheme">
             {{ theme === 'dark' ? '☀' : '☾' }}
           </button>
@@ -207,19 +212,16 @@ window.AppComponent = {
 
         <main class="main">
           <header class="search-bar">
-            <span class="query-label">Search</span>
+               <div class="search-bar-top">
+                 <span class="query-label">Search</span>
+                 <button class="manage-btn" @click="addBookmark">+ New</button>
+               </div>
             <div class="action-query">
               <div class="icon-search">⌕</div>
               <input ref="query" v-model="query" @keydown.enter="goToFirstBookmark"
                 class="query" placeholder="Search bookmarks…" autocomplete="off" />
             </div>
           </header>
-
-          <div class="manage-bar">
-            <button class="manage-btn" @click="addBookmark">+ New</button>
-            <button class="manage-btn" @click="downloadBookmarks">↓ bookmarks.js</button>
-            <button class="manage-btn manage-btn--muted" @click="resetBookmarks">Reset</button>
-          </div>
 
           <div class="results-line" v-if="!!query">
             <span class="results-count">{{ totalCount }}</span>

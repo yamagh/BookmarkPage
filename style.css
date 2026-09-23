@@ -329,19 +329,8 @@ body::after {
 }
 
 /* ============================================
-   MANAGE BAR + SEARCH — main column top controls
-     ============================================ */
-.manage-bar {
-  display: flex;
-  gap: var(--space-m);
-  flex-wrap: wrap;
-  padding-bottom: var(--space-m);
-  margin-bottom: var(--space-l);
-  border-bottom: 1px solid var(--hairline);
-  transition: border-color var(--transition);
-  animation: railFade .5s ease .05s backwards;
-}
-
+   SEARCH BAR + ADD — main column top controls
+      ============================================ */
 .manage-btn {
   font-family: "Instrument Sans", sans-serif;
   font-size: 12px;
@@ -369,18 +358,33 @@ body::after {
   color: var(--text-tertiary);
 }
 
+.rail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-l);
+  margin-top: var(--space-m);
+  padding-top: var(--space-m);
+  border-top: 1px solid var(--hairline);
+  transition: border-color var(--transition);
+}
+
 .search-bar {
   margin-bottom: var(--space-l);
   animation: railFade .55s ease .12s backwards;
 }
 
+.search-bar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-s);
+}
+
 .query-label {
-  display: block;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .2em;
   color: var(--text-tertiary);
-  margin-bottom: var(--space-s);
 }
 
 .action-query {
@@ -941,7 +945,7 @@ li.item:hover .item-actions {
 
 /* Respect reduced motion: still, no large movement */
 @media (prefers-reduced-motion: reduce) {
-  .app-root, .manage-bar, .search-bar, .empty-state,
+   .app-root, .search-bar, .empty-state,
   .tag-groups > ul, li.item {
     animation: none !important;
   }
