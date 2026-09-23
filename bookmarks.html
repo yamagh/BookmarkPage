@@ -7,37 +7,36 @@
   <title>Bookmarks</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400;1,9..144,500;1,9..144,600&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
   <style>
 /* ============================================
-   BOOKMARKS — Paper & Ink Minimal Redesign
-   Concept: Clean journal-like aesthetic
-   Type: Inter Tight (display/body/UI)
-     ============================================ */
-
-/* CSS Custom Properties — Light mode defaults */
+   BOOKMARKS — Index / Catalog
+   Concept: A refined personal editorial index
+   Type: Fraunces (display / serif) · Instrument Sans (UI / body)
+      ============================================ */
+/* CSS Custom Properties — Ivory Press (light) */
 :root {
   /* Backgrounds */
-  --bg-base: #faf9f7;
-  --bg-surface: #ffffff;
-  --bg-card: #ffffff;
+  --bg-base: #f7f2e9;
+  --bg-surface: #fbf8f1;
+  --bg-card: #fbf8f1;
 
   /* Text hierarchy */
-  --text-primary: #1a1a1a;
-  --text-secondary: #5a5a5a;
-  --text-tertiary: #9a9a9a;
+  --text-primary: #201c16;
+  --text-secondary: #5c554a;
+  --text-tertiary: #8a8174;
 
-  /* Accents — warm stone/brown */
-  --accent: #b5651d;
-  --accent-muted: rgba(181, 101, 29, 0.15);
+  /* Accents — champagne bronze */
+  --accent: #b38a3f;
+  --accent-soft: rgba(179, 138, 63, .14);
 
   /* Hairline dividers */
-  --hairline: rgba(26, 26, 26, 0.08);
+  --hairline: rgba(32, 28, 22, .10);
 
   /* Transitions — smooth theme change on all colored elements */
   --transition: 200ms ease;
 
-  /* Spacing */
+  /* Spacing — 8pt scale */
   --space-xs: 6px;
   --space-s: 10px;
   --space-m: 16px;
@@ -46,23 +45,23 @@
   --space-xxl: 56px;
 }
 
-/* Dark mode overrides */
+/* Nocturne (dark) */
 [data-theme="dark"] {
-  --bg-base: #141418;
-  --bg-surface: #1a1a1e;
-  --bg-card: #1e1e24;
+  --bg-base: #12100d;
+  --bg-surface: #181511;
+  --bg-card: #1a1712;
 
-  --text-primary: #e8e6e1;
-  --text-secondary: #9a978f;
-  --text-tertiary: #6b6960;
+  --text-primary: #ede6d8;
+  --text-secondary: #a39a8a;
+  --text-tertiary: #6f685c;
 
-  --accent: #c97d3a;
-  --accent-muted: rgba(201, 125, 58, 0.15);
+  --accent: #d9b26a;
+  --accent-soft: rgba(217, 178, 106, .16);
 
-  --hairline: rgba(232, 230, 225, 0.06);
+  --hairline: rgba(237, 230, 216, .08);
 }
 
-/* Smooth theme transition on all colored elements */
+/* Reset */
 *,
 *::before,
 *::after {
@@ -76,7 +75,7 @@ html {
 }
 
 body {
-  font-family: "Inter Tight", system-ui, -apple-system, sans-serif;
+  font-family: "Instrument Sans", system-ui, -apple-system, sans-serif;
   background-color: var(--bg-base);
   color: var(--text-primary);
   min-height: 100vh;
@@ -84,15 +83,233 @@ body {
   transition: background-color var(--transition), color var(--transition);
 }
 
+/* Paper grain — subtle noise over the composition */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: .04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* Ambient light mesh — champagne glow, depth */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .55;
+  background:
+    radial-gradient(1100px 760px at 8% -6%, rgba(179, 138, 63, .10), transparent 58%),
+    radial-gradient(820px 640px at 96% 22%, rgba(179, 138, 63, .05), transparent 55%);
+}
+[data-theme="dark"] body::after {
+  background:
+    radial-gradient(1100px 760px at 8% -6%, rgba(217, 178, 106, .10), transparent 58%),
+    radial-gradient(820px 640px at 96% 22%, rgba(217, 178, 106, .05), transparent 55%);
+}
+
 /* ============================================
-   THEME TOGGLE — minimal icon button
-    =========================================== */
+   LAYOUT — two-zoom: index rail + main column
+     ============================================ */
+.app-root {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  column-gap: var(--space-xxl);
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: var(--space-xxl) var(--space-xl) var(--space-xxl);
+  align-items: start;
+  animation: railFade .55s ease backwards;
+}
+
+.main {
+  min-width: 0;
+}
+
+/* ============================================
+   INDEX RAIL — masthead + count + tag index + meta
+     ============================================ */
+.index-rail {
+  position: sticky;
+  top: 56px;
+  align-self: start;
+  padding-right: var(--space-xxl);
+  padding-bottom: var(--space-l);
+  border-right: 1px solid var(--hairline);
+  min-width: 0;
+  transition: border-color var(--transition);
+}
+
+.masthead {
+  margin-bottom: var(--space-l);
+}
+
+.masthead-title {
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.05;
+  letter-spacing: -.01em;
+  color: var(--text-primary);
+  font-optical-sizing: auto;
+}
+
+.masthead-sub {
+  font-family: "Instrument Sans", sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .24em;
+  color: var(--text-tertiary);
+  margin-top: var(--space-xs);
+}
+
+.masthead-rule {
+  position: relative;
+  height: 10px;
+  margin-top: var(--space-m);
+}
+.masthead-rule::before,
+.masthead-rule::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--hairline);
+  transition: background-color var(--transition);
+}
+.masthead-rule::before { top: 2px; }
+.masthead-rule::after { bottom: 2px; }
+
+.masthead-orn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-base);
+  padding: 0 var(--space-s);
+  color: var(--accent);
+  font-size: 12px;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.rail-count {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-s);
+  margin-bottom: var(--space-l);
+}
+
+.rail-count-num {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 400;
+  font-size: 54px;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+  transition: color var(--transition);
+}
+
+.rail-count-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .2em;
+  color: var(--text-tertiary);
+}
+
+.tag-index {
+  margin-bottom: var(--space-l);
+}
+
+.tag-index-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .2em;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-s);
+}
+
+.tag-index-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tag-index-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-s);
+  padding: 4px 0;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 13px;
+  background-image: linear-gradient(var(--accent), var(--accent));
+  background-size: 0% 1.5px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size .28s cubic-bezier(.22,1,.36,1), color var(--transition);
+}
+
+.tag-index-item:hover {
+  color: var(--accent);
+  background-size: 100% 1.5px;
+}
+
+.tag-index-item.is-active {
+  color: var(--accent);
+  background-size: 100% 2px;
+  font-weight: 500;
+}
+
+.tag-index-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tag-index-count {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+  transition: color var(--transition);
+}
+
+.rail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--text-tertiary);
+  padding-top: var(--space-m);
+  border-top: 1px solid var(--hairline);
+  transition: border-color var(--transition);
+}
+
+.rail-meta-dot { opacity: .5; }
+
+/* ============================================
+   THEME TOGGLE — quiet text control in the rail
+     ============================================ */
 .theme-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  margin-top: var(--space-m);
+  width: 34px;
+  height: 34px;
   border: none;
   background: none;
   color: var(--text-secondary);
@@ -105,46 +322,102 @@ body {
 
 .theme-toggle:hover {
   color: var(--accent);
-  background-color: var(--accent-muted);
+  background-color: var(--accent-soft);
 }
 
 /* ============================================
-   TOP NAVIGATION BAR — centered, minimal pill search
-    =========================================== */
-.action-bar {
-  position: sticky;
-  top: var(--space-l);
-  z-index: 100;
+   MANAGE BAR + SEARCH — main column top controls
+     ============================================ */
+.manage-bar {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: var(--space-s) var(--space-xl);
-  margin: var(--space-xxl) auto var(--space-xl);
-  max-width: 960px;
   gap: var(--space-m);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-m);
+  margin-bottom: var(--space-l);
+  border-bottom: 1px solid var(--hairline);
+  transition: border-color var(--transition);
+  animation: railFade .5s ease .05s backwards;
 }
 
-.action-center {
-  width: 100%;
-  max-width: 520px;
+.manage-btn {
+  font-family: "Instrument Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  padding: 2px 1px;
+  cursor: pointer;
+  background-image: linear-gradient(var(--accent), var(--accent));
+  background-size: 0% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: color var(--transition), background-size .28s cubic-bezier(.22,1,.36,1);
+}
+
+.manage-btn:hover {
+  color: var(--accent);
+  background-size: 100% 1px;
+}
+
+.manage-btn--muted {
+  color: var(--text-tertiary);
+}
+
+.search-bar {
+  margin-bottom: var(--space-l);
+  animation: railFade .55s ease .12s backwards;
+}
+
+.query-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .2em;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-s);
 }
 
 .action-query {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-s);
-  border-bottom: 1px solid var(--hairline);
-  padding: var(--space-s) var(--space-xs);
-  transition: border-color var(--transition);
+  padding: var(--space-xs) 0 var(--space-s);
 }
 
-.action-query:focus-within {
-  border-color: var(--accent);
+/* hairline baseline + accent underline that draws on focus */
+.action-query::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--hairline);
+  transition: background-color var(--transition);
+}
+.action-query::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.5px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .38s cubic-bezier(.22,1,.36,1), background-color var(--transition);
+}
+.action-query:focus-within::after {
+  transform: scaleX(1);
 }
 
 .icon-search {
-  font-size: var(--space-m);
-  opacity: 0.35;
+  font-size: var(--space-l);
+  opacity: .4;
   color: var(--text-tertiary);
   transition: color var(--transition), opacity var(--transition);
   user-select: none;
@@ -156,8 +429,8 @@ body {
 }
 
 .query {
-  font-family: "Inter Tight", system-ui, -apple-system, sans-serif;
-  font-size: var(--space-m);
+  font-family: "Instrument Sans", system-ui, sans-serif;
+  font-size: 18px;
   font-weight: 500;
   background: none;
   border: none;
@@ -171,315 +444,271 @@ body {
 .query::placeholder {
   color: var(--text-tertiary);
   font-weight: 400;
+  font-family: "Instrument Sans", sans-serif;
 }
 
 /* ============================================
-   TAG GROUPS — clean cards with hairline dividers
-    =========================================== */
-.tag-groups {
-  max-width: 960px;
-  margin: 0 auto var(--space-xxl);
-  padding: 0 var(--space-m);
-}
-
-.tag-groups > ul {
-  columns: var(--columns, 3) var(--column-gap, var(--space-l));
-  list-style: none;
-}
-
-/* Each tag group = a clean card */
-li.tag {
-  background: var(--bg-card);
-  border: 1px solid var(--hairline);
-  border-radius: 8px;
-  overflow: hidden;
-  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color var(--transition),
-    background-color var(--transition);
-  animation: cardReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-  break-inside: avoid;
+   RESULT COUNTER — large serif numeral
+     ============================================ */
+.results-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-s);
   margin-bottom: var(--space-l);
 }
 
-li.tag:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--hairline);
-  border-color: var(--accent-muted);
-}
-
-/* Stagger the reveal animation per card */
-@keyframes cardReveal {
-  from {
-    opacity: 0;
-    transform: translateY(24px) scale(0.97);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Generate delay for cards — up to 8 */
-li.tag:nth-child(1) { animation-delay: 0.05s; }
-li.tag:nth-child(2) { animation-delay: 0.09s; }
-li.tag:nth-child(3) { animation-delay: 0.13s; }
-li.tag:nth-child(4) { animation-delay: 0.17s; }
-li.tag:nth-child(5) { animation-delay: 0.21s; }
-li.tag:nth-child(6) { animation-delay: 0.25s; }
-li.tag:nth-child(7) { animation-delay: 0.29s; }
-li.tag:nth-child(8) { animation-delay: 0.33s; }
-
-/* ============================================
-   TAG NAME — small caps, tracked out, subtle underline
-    =========================================== */
-.tag-name {
-  font-family: "Inter Tight", system-ui, -apple-system, sans-serif;
-  font-size: 14px;
-  font-variant: small-caps;
-  letter-spacing: 0.1em;
+.results-count {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 400;
+  font-size: 48px;
+  line-height: 1;
   color: var(--accent);
-  padding: var(--space-m) var(--space-l) var(--space-xs);
-  position: relative;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
   transition: color var(--transition);
 }
 
-.tag-name::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: var(--space-l);
-  width: 20px;
-  height: 1px;
-  background: var(--accent);
-  transition: background-color var(--transition);
+.results-label {
+  font-family: "Instrument Sans", sans-serif;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  transition: color var(--transition);
 }
 
 /* ============================================
-   BOOKMARK ITEMS — minimal links with chevron indicator
-    =========================================== */
+   EMPTY STATES — ornaments + serif heading
+     ============================================ */
+.empty-state {
+  text-align: center;
+  padding: var(--space-xxl) var(--space-m);
+  animation: cardReveal .7s cubic-bezier(.22,1,.36,1) backwards;
+}
+
+.empty-icon {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 42px;
+  color: var(--accent);
+  opacity: .55;
+  margin-bottom: var(--space-m);
+  transition: color var(--transition), opacity var(--transition);
+}
+
+.empty-title {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+  transition: color var(--transition);
+}
+
+.empty-text {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  transition: color var(--transition);
+}
+
+/* ============================================
+   TAG GROUPS — hairline-edged sections, numbered
+     ============================================ */
+.tag-groups > ul {
+  columns: var(--columns, 3) var(--column-gap, 32px);
+  list-style: none;
+}
+
+li.tag {
+  position: relative;
+  break-inside: avoid;
+  margin-bottom: var(--space-xxl);
+  scroll-margin-top: 72px;
+}
+
+.tag-head {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-s);
+  padding-bottom: var(--space-xs);
+  margin-bottom: var(--space-xs);
+  border-top: 1px solid var(--accent);
+  transition: border-color var(--transition);
+}
+/* second hairline of the double rule */
+.tag-head::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -3px;
+  height: 1px;
+  background: var(--hairline);
+  transition: background-color var(--transition);
+}
+
+.tag-number {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 12px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .05em;
+  flex: 0 0 auto;
+  transition: color var(--transition);
+}
+
+.tag-name {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -.01em;
+  color: var(--text-primary);
+  flex: 1 1 auto;
+  transition: color var(--transition);
+}
+
+.tag-count {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+  transition: color var(--transition);
+}
+
+/* ============================================
+   BOOKMARK ITEMS — hairline rows, editorial list
+     ============================================ */
 .tag-content ul {
   list-style: none;
-  padding: var(--space-s) var(--space-l) var(--space-m);
 }
 
 li.item {
-  padding: var(--space-xs) 0;
+  position: relative;
+  padding: var(--space-s) 0;
   border-bottom: 1px solid var(--hairline);
-  transition: background-color var(--transition);
+  transition: transform .2s ease, border-color var(--transition);
+  animation: cardReveal .5s cubic-bezier(.22,1,.36,1) backwards;
 }
 
 li.item:last-child {
   border-bottom: none;
 }
 
+/* entry-level stagger reveal — cap at 12 */
+li.item:nth-child(1) { animation-delay: .04s; }
+li.item:nth-child(2) { animation-delay: .07s; }
+li.item:nth-child(3) { animation-delay: .10s; }
+li.item:nth-child(4) { animation-delay: .13s; }
+li.item:nth-child(5) { animation-delay: .16s; }
+li.item:nth-child(6) { animation-delay: .19s; }
+li.item:nth-child(7) { animation-delay: .22s; }
+li.item:nth-child(8) { animation-delay: .25s; }
+li.item:nth-child(9) { animation-delay: .28s; }
+li.item:nth-child(10) { animation-delay: .31s; }
+li.item:nth-child(11) { animation-delay: .34s; }
+li.item:nth-child(12) { animation-delay: .37s; }
+
 li.item a {
-  font-family: "Inter Tight", system-ui, -apple-system, sans-serif;
+  font-family: "Instrument Sans", system-ui, sans-serif;
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 500;
   color: var(--text-secondary);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-xs);
-  transition: color var(--transition), transform 0.2s ease;
+  gap: var(--space-s);
+  max-width: 100%;
   cursor: pointer;
+  transition: color var(--transition);
 }
 
-/* Leading chevron indicator on hover — subtle shift */
+.item-link { min-width: 0; }
+
+.item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* hover lift */
+li.item:hover {
+  transform: translateY(-1px);
+}
+
+/* leading chevron on hover */
 li.item a::before {
   content: "›";
-  font-family: "Inter Tight", system-ui, sans-serif;
-  font-size: 14px;
-  opacity: 0;
+  font-family: "Instrument Sans", sans-serif;
+  font-size: 15px;
   color: var(--accent);
+  opacity: 0;
   transform: translateX(-4px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity .2s ease, transform .2s ease;
 }
 
 li.item a:hover {
   color: var(--text-primary);
-  transform: translateX(3px);
 }
 
-li.item a:hover::before {
+li.item:hover a::before {
   opacity: 1;
   transform: translateX(0);
 }
 
-/* Parameterized bookmarks get an indicator */
+/* `%s` search template indicator */
 li.item[href*="%s"] a::after {
-  content: "→";
-  font-family: "Inter Tight", system-ui, sans-serif;
-  font-size: 11px;
+  content: "%s";
+  font-family: "Instrument Sans", sans-serif;
+  font-size: 10px;
+  letter-spacing: .04em;
+  color: var(--text-tertiary);
   opacity: 0;
-  color: var(--accent);
-  margin-left: auto;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  transform: translateX(-4px);
+  margin-left: var(--space-xs);
+  flex: 0 0 auto;
+  transition: opacity .2s ease;
 }
 
 li.item[href*="%s"]:hover a::after {
-  opacity: 0.7;
-  transform: translateX(0);
+  opacity: .75;
 }
 
-/* ============================================
-   RESULT COUNTER & EMPTY STATES
-    =========================================== */
-.results-line {
-  max-width: 960px;
-  margin: 0 auto var(--space-l);
-  padding: 0 var(--space-m);
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-s);
-}
-
-.results-count {
-  font-family: "Inter Tight", system-ui, -apple-system, sans-serif;
-  font-size: var(--space-xxl);
-  color: var(--accent);
-  line-height: 1;
-  transition: color var(--transition);
-}
-
-.results-label {
-  font-family: "Inter Tight", system-ui, -apple-system, sans-serif;
-  font-size: 13px;
-  color: var(--text-tertiary);
-  transition: color var(--transition);
-}
-
-/* Empty state — minimal icon + muted text */
-.empty-state {
-  max-width: 960px;
-  margin: var(--space-xxl) auto;
-  padding: var(--space-xl) var(--space-m);
-  text-align: center;
-  animation: cardReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-}
-
-.empty-icon {
-  font-size: 40px;
-  color: var(--text-tertiary);
-  opacity: 0.5;
-  margin-bottom: var(--space-m);
-  transition: color var(--transition), opacity var(--transition);
-}
-
-.empty-text {
-  font-family: "Inter Tight", system-ui, -apple-system, sans-serif;
-  font-size: 14px;
-  color: var(--text-tertiary);
-  transition: color var(--transition);
-}
-
-/* Favicon icons on bookmark links */
+/* Favicon — desaturated square, hairline frame, saturates on hover */
 .bm-favicon {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  opacity: 0.5;
   border-radius: 2px;
-  transition: opacity 0.2s ease;
+  border: 1px solid var(--hairline);
+  opacity: .55;
+  filter: saturate(0);
+  transition: opacity .2s ease, filter .2s ease, border-color var(--transition);
 }
 
 li.item:hover .bm-favicon {
   opacity: 1;
+  filter: saturate(1);
 }
 
-/* ============================================
-   TOAST NOTIFICATION — theme-aware
-    =========================================== */
-.toast-notification {
-  position: fixed;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: var(--bg-card);
-  border: 1px solid var(--hairline);
-  color: var(--accent);
-  font-family: "Inter Tight", system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 12px 24px;
-  border-radius: 8px;
-  z-index: 99999;
-  opacity: 0;
-  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    background-color var(--transition),
-    color var(--transition);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="dark"] .toast-notification {
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-}
-
-/* ============================================
-   MANAGE BAR — add / download / reset controls
-     ============================================ */
-.manage-bar {
-  max-width: 960px;
-  margin: 0 auto var(--space-m);
-  padding: 0 var(--space-m);
-  display: flex;
-  gap: var(--space-s);
-  flex-wrap: wrap;
-}
-
-.manage-btn {
-  font-family: "Inter Tight", system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  background: none;
-  border: 1px solid var(--hairline);
-  border-radius: 8px;
-  padding: 6px 14px;
-  cursor: pointer;
-  transition: color var(--transition),
-    background-color var(--transition),
-    border-color var(--transition);
-}
-
-.manage-btn:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-  background-color: var(--accent-muted);
-}
-
-.manage-btn--muted {
-  color: var(--text-tertiary);
-}
-
-/* ============================================
-   BOOKMARK NOTE — small muted line under the label
-     ============================================ */
+/* Note — italic serif, muted, 2-line clamp */
 .bm-note {
-  font-family: "Inter Tight", system-ui, sans-serif;
-  font-size: 12px;
+  font-family: "Fraunces", Georgia, serif;
+  font-style: italic;
+  font-size: 11px;
   color: var(--text-tertiary);
   line-height: 1.4;
-  margin-top: 2px;
+  margin-top: 3px;
+  padding-left: 25px;
   max-width: 92%;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  transition: color var(--transition);
 }
 
 /* Per-item edit / delete actions — revealed on hover */
-li.item {
-  position: relative;
-}
-
 .item-actions {
   position: absolute;
-  top: var(--space-xs);
+  top: var(--space-s);
   right: 0;
   display: flex;
   gap: var(--space-xs);
@@ -492,26 +721,56 @@ li.item:hover .item-actions {
 }
 
 .item-action {
-  font-family: "Inter Tight", system-ui, sans-serif;
+  font-family: "Instrument Sans", sans-serif;
   font-size: 13px;
   line-height: 1;
   color: var(--text-tertiary);
   background: none;
   border: none;
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-  transition: color var(--transition), background-color var(--transition);
+  padding: 2px 5px;
+  transition: color var(--transition);
 }
 
 .item-action:hover {
   color: var(--accent);
-  background-color: var(--accent-muted);
 }
 
 .item-action--danger:hover {
   color: #c0392b;
-  background-color: rgba(192, 57, 43, 0.12);
+}
+
+[data-theme="dark"] .item-action--danger:hover {
+  color: #e07a6e;
+}
+
+/* ============================================
+   TOAST NOTIFICATION — bottom-center, accent edge
+     ============================================ */
+.toast-notification {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  border-left: 2px solid var(--accent);
+  color: var(--text-primary);
+  font-family: "Instrument Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 12px 20px;
+  border-radius: 4px;
+  z-index: 99999;
+  opacity: 0;
+  transition: all .38s cubic-bezier(.22,1,.36,1),
+    background-color var(--transition),
+    color var(--transition);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .12);
+}
+
+[data-theme="dark"] .toast-notification {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .5);
 }
 
 /* ============================================
@@ -520,7 +779,9 @@ li.item:hover .item-actions {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(20, 18, 14, .45);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -528,27 +789,32 @@ li.item:hover .item-actions {
   padding: var(--space-m);
 }
 
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0, 0, 0, .62);
+}
+
 .modal {
   background: var(--bg-card);
   border: 1px solid var(--hairline);
-  border-radius: 12px;
+  border-radius: 6px;
   width: 100%;
   max-width: 440px;
   padding: var(--space-l);
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, .18);
   transition: background-color var(--transition), color var(--transition);
 }
 
 [data-theme="dark"] .modal {
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, .55);
 }
 
 .modal-title {
-  font-family: "DM Serif Display", serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: 22px;
   font-weight: 400;
   color: var(--text-primary);
   margin-bottom: var(--space-l);
+  transition: color var(--transition);
 }
 
 .modal-body {
@@ -564,28 +830,30 @@ li.item:hover .item-actions {
 }
 
 .field-label {
-  font-family: "Inter Tight", system-ui, sans-serif;
+  font-family: "Instrument Sans", sans-serif;
   font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-weight: 500;
+  letter-spacing: .08em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  transition: color var(--transition);
 }
 
 .field-label em {
-  font-weight: 400;
+  font-style: italic;
   text-transform: none;
   letter-spacing: 0;
   color: var(--text-tertiary);
+  font-weight: 400;
 }
 
 .field-input {
-  font-family: "Inter Tight", system-ui, sans-serif;
+  font-family: "Instrument Sans", system-ui, sans-serif;
   font-size: 14px;
   color: var(--text-primary);
-  background: var(--bg-base);
+  background: transparent;
   border: 1px solid var(--hairline);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: var(--space-s) var(--space-m);
   transition: border-color var(--transition), background-color var(--transition);
 }
@@ -609,14 +877,15 @@ li.item:hover .item-actions {
 }
 
 .modal-btn {
-  font-family: "Inter Tight", system-ui, sans-serif;
-  font-size: 14px;
+  font-family: "Instrument Sans", sans-serif;
+  font-size: 13px;
   font-weight: 500;
+  letter-spacing: .04em;
   border: 1px solid var(--hairline);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 8px 18px;
   cursor: pointer;
-  background: var(--bg-base);
+  background: transparent;
   color: var(--text-secondary);
   transition: color var(--transition),
     background-color var(--transition),
@@ -634,27 +903,94 @@ li.item:hover .item-actions {
   color: #fff;
 }
 
+[data-theme="dark"] .modal-btn--primary {
+  color: #1a1712;
+}
+
 .modal-btn--primary:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.06);
+}
+
+/* ============================================
+   MOTION — staggered load orchestration
+     ============================================ */
+@keyframes cardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes railFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respect reduced motion: still, no large movement */
+@media (prefers-reduced-motion: reduce) {
+  .app-root, .manage-bar, .search-bar, .empty-state,
+  .tag-groups > ul, li.item {
+    animation: none !important;
+  }
+  .action-query::after {
+    transition: none !important;
+    transform: scaleX(1);
+  }
+  li.item { transition: none !important; }
+  li.item:hover { transform: none !important; }
 }
 
 /* ============================================
    RESPONSIVE
-    =========================================== */
+     ============================================ */
 @media (min-width: 1200px) {
-   .tag-groups > ul { --columns: 4; }
+  .tag-groups > ul { --columns: 4; }
+}
+
+@media (max-width: 900px) {
+  .app-root {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+  }
+  .index-rail {
+    position: static;
+    border-right: none;
+    border-bottom: 1px solid var(--hairline);
+    padding-right: 0;
+    padding-bottom: var(--space-l);
+    margin-bottom: var(--space-l);
+  }
+  .tag-index-list {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: var(--space-m);
+    padding-bottom: var(--space-s);
+  }
+  .tag-index-item {
+    flex: 0 0 auto;
+    background-size: 0 1px;
+  }
+  .tag-groups > ul { --columns: 2; }
 }
 
 @media (max-width: 768px) {
-   .action-bar {
-    padding: var(--space-s) var(--space-m);
-   }
-
-   .tag-groups > ul { --columns: 2; }
+  .app-root { padding: var(--space-l) var(--space-m); }
+  .tag-groups > ul { --columns: 2; }
 }
 
 @media (max-width: 480px) {
-   .tag-groups > ul { --columns: 1; }
+  .tag-groups > ul { --columns: 1; }
 }
 
 </style>
@@ -1016,6 +1352,7 @@ window.AppComponent = {
   data() {
     return {
       query: '',
+      activeTag: '',
       theme: window.ThemeManager.get(),
       bookmarks: window.BookmarkStore.load(bookmarks),
       originalBookmarks: window.BookmarkUtils.normalizeBookmarks(
@@ -1055,6 +1392,10 @@ window.AppComponent = {
     totalCount() {
       return Object.values(this.sortedGroupedBookmarks)
          .flat().length;
+    },
+    tagIndex() {
+      const groups = this.sortedGroupedBookmarks;
+      return Object.keys(groups).map(tag => ({ tag, count: groups[tag].length }));
      }
    },
 
@@ -1077,6 +1418,15 @@ window.AppComponent = {
     focusQueryInput() {
       this.$refs.query?.focus();
      },
+
+    scrollToTag(tag) {
+      const entry = this.tagIndex.find(e => e.tag === tag);
+      if (!entry) return;
+      const i = this.tagIndex.indexOf(entry);
+      const el = document.querySelectorAll('li.tag')[i];
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      this.activeTag = tag;
+        },
 
     copyBookmarksToClipboard() {
       window.ClipboardService.copyBookmarksToClipboard(this.bookmarks);
@@ -1172,57 +1522,91 @@ window.AppComponent = {
    },
 
   template: `
-     <div class="app-root">
+       <div class="app-root">
 
-       <!-- Header -->
-       <header class="action-bar">
-          <button class="theme-toggle" :title="'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' mode'" @click="toggleTheme">
-             {{ theme === 'dark' ? '☀' : '☾' }}
-          </button>
-          <div class="action-center">
-             <div class="action-query">
-                 <div class="icon-search">⌕</div>
-                 <input ref="query" v-model="query" @keydown.enter="goToFirstBookmark"
-                     class="query" placeholder="Search bookmarks…" autocomplete="off" />
-              </div>
+        <aside class="index-rail">
+          <div class="masthead">
+            <h1 class="masthead-title">Bookmarks</h1>
+            <p class="masthead-sub">A Personal Index</p>
+            <div class="masthead-rule"><span class="masthead-orn">✦</span></div>
           </div>
-       </header>
-       <div class="manage-bar">
-           <button class="manage-btn" @click="addBookmark">+ New</button>
-           <button class="manage-btn" @click="downloadBookmarks">↓ bookmarks.html</button>
-           <button class="manage-btn manage-btn--muted" @click="resetBookmarks">Reset</button>
-       </div>
 
+          <div class="rail-count">
+            <span class="rail-count-num">{{ totalCount }}</span>
+            <span class="rail-count-label">entries</span>
+          </div>
 
-       <!-- Results counter -->
-       <div class="results-line" v-if="!!query">
-          <span class="results-count">{{ totalCount }}</span>
-          <span class="results-label">result{{ totalCount !== 1 ? 's' : '' }} for "{{ query }}"</span>
-       </div>
+          <nav class="tag-index">
+            <p class="tag-index-title">Index</p>
+            <ul class="tag-index-list">
+              <li v-for="(entry, i) in tagIndex" :key="entry.tag"
+                class="tag-index-item" :class="{ 'is-active': activeTag === entry.tag }"
+                @click="scrollToTag(entry.tag)">
+                <span class="tag-index-name">{{ entry.tag }}</span>
+                <span class="tag-index-count">{{ entry.count }}</span>
+              </li>
+            </ul>
+          </nav>
 
-       <!-- Empty: no bookmarks -->
-       <div class="empty-state" v-if="!query && totalCount === 0">
-          <div class="empty-icon">◇</div>
-          <p class="empty-text">No bookmarks yet. Add some to get started.</p>
-       </div>
+          <div class="rail-meta">
+            <span>{{ totalCount }} bookmark{{ totalCount !== 1 ? 's' : '' }}</span>
+            <span class="rail-meta-dot">·</span>
+            <span>{{ tagIndex.length }} tags</span>
+          </div>
 
-       <!-- Empty: no results -->
-       <div class="empty-state" v-else-if="!!query && totalCount === 0">
-          <div class="empty-icon">◇</div>
-          <p class="empty-text">Nothing matches. Try different keywords.</p>
-       </div>
+          <button class="theme-toggle" :title="'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' mode'" @click="toggleTheme">
+            {{ theme === 'dark' ? '☀' : '☾' }}
+          </button>
+        </aside>
 
-       <!-- Bookmark grid -->
-       <div class="tag-groups" v-else>
-          <ul>
-             <li v-for="(group, tag) in sortedGroupedBookmarks" :key="tag" class="tag">
-               <div class="tag-content">
-                  <div class="tag-name">{{ tag }} — {{ group.length }}</div>
+        <main class="main">
+          <header class="search-bar">
+            <span class="query-label">Search</span>
+            <div class="action-query">
+              <div class="icon-search">⌕</div>
+              <input ref="query" v-model="query" @keydown.enter="goToFirstBookmark"
+                class="query" placeholder="Search bookmarks…" autocomplete="off" />
+            </div>
+          </header>
+
+          <div class="manage-bar">
+            <button class="manage-btn" @click="addBookmark">+ New</button>
+            <button class="manage-btn" @click="downloadBookmarks">↓ bookmarks.html</button>
+            <button class="manage-btn manage-btn--muted" @click="resetBookmarks">Reset</button>
+          </div>
+
+          <div class="results-line" v-if="!!query">
+            <span class="results-count">{{ totalCount }}</span>
+            <span class="results-label">result{{ totalCount !== 1 ? 's' : '' }} for "{{ query }}"</span>
+          </div>
+
+          <div class="empty-state" v-if="!query && totalCount === 0">
+            <div class="empty-icon">◇</div>
+            <p class="empty-title">No bookmarks yet</p>
+            <p class="empty-text">Add one to begin your index.</p>
+          </div>
+
+          <div class="empty-state" v-else-if="!!query && totalCount === 0">
+            <div class="empty-icon">↝</div>
+            <p class="empty-title">Nothing matches</p>
+            <p class="empty-text">Try different keywords.</p>
+          </div>
+
+          <div class="tag-groups" v-else>
+            <ul>
+              <li v-for="(group, tag, i) in sortedGroupedBookmarks" :key="tag"
+                class="tag" :id="'group-' + i">
+                <div class="tag-content">
+                  <div class="tag-head">
+                    <span class="tag-number">{{ String(i + 1).padStart(2, '0') }}</span>
+                    <span class="tag-name">{{ tag }}</span>
+                    <span class="tag-count">{{ group.length }}</span>
+                  </div>
                   <ul>
                     <li v-for="bm in group" :key="bm.url" class="item">
-                      <a :href="bm.url" @click.prevent="navigate(bm)">
+                      <a :href="bm.url" @click.prevent="navigate(bm)" class="item-link">
                         <img v-if="faviconUrl(bm.url)" class="bm-favicon" :src="faviconUrl(bm.url)" alt="" loading="lazy" />
-                        {{ bm.label }}
+                        <span class="item-label">{{ bm.label }}</span>
                       </a>
                       <p v-if="bm.note" class="bm-note">{{ bm.note }}</p>
                       <div class="item-actions">
@@ -1231,46 +1615,45 @@ window.AppComponent = {
                       </div>
                     </li>
                   </ul>
-               </div>
-             </li>
-          </ul>
-       </div>
+                </div>
+              </li>
+            </ul>
+          </div>
 
-
-       <!-- Editor modal -->
-       <div class="modal-overlay" v-if="showEditor" @click.self="closeEditor">
-          <div class="modal" role="dialog" aria-modal="true" @click.stop>
-            <h2 class="modal-title">{{ isNew ? 'New bookmark' : 'Edit bookmark' }}</h2>
-            <div class="modal-body">
-              <label class="field">
-                <span class="field-label">Label</span>
-                <input class="field-input" v-model="editing.label" autocomplete="off" />
-              </label>
-              <label class="field">
-                <span class="field-label">URL</span>
-                <input class="field-input" v-model="editing.url" placeholder="https://…   (%s = search term)" autocomplete="off" />
-              </label>
-              <label class="field">
-                <span class="field-label">Tags <em>(comma separated)</em></span>
-                <input class="field-input" v-model="editing.tags" placeholder="🧰 Tools, 🌍 Web" autocomplete="off" />
-              </label>
-              <label class="field">
-                <span class="field-label">Keywords <em>(comma separated)</em></span>
-                <input class="field-input" v-model="editing.keywords" placeholder="cg, chatgpt" autocomplete="off" />
-              </label>
-              <label class="field">
-                <span class="field-label">Note</span>
-                <textarea class="field-input field-textarea" v-model="editing.note" rows="3" placeholder="Optional note"></textarea>
-              </label>
-            </div>
-            <div class="modal-actions">
-              <button class="modal-btn modal-btn--muted" @click="closeEditor">Cancel</button>
-              <button class="modal-btn modal-btn--primary" @click="saveEdit">Save</button>
+          <!-- Editor modal -->
+          <div class="modal-overlay" v-if="showEditor" @click.self="closeEditor">
+            <div class="modal" role="dialog" aria-modal="true" @click.stop>
+              <h2 class="modal-title">{{ isNew ? 'New bookmark' : 'Edit bookmark' }}</h2>
+              <div class="modal-body">
+                <label class="field">
+                  <span class="field-label">Label</span>
+                  <input class="field-input" v-model="editing.label" autocomplete="off" />
+                </label>
+                <label class="field">
+                  <span class="field-label">URL</span>
+                  <input class="field-input" v-model="editing.url" placeholder="https://…     (%s = search term)" autocomplete="off" />
+                </label>
+                <label class="field">
+                  <span class="field-label">Tags <em>(comma separated)</em></span>
+                  <input class="field-input" v-model="editing.tags" placeholder="🧰 Tools, 🌍 Web" autocomplete="off" />
+                </label>
+                <label class="field">
+                  <span class="field-label">Keywords <em>(comma separated)</em></span>
+                  <input class="field-input" v-model="editing.keywords" placeholder="cg, chatgpt" autocomplete="off" />
+                </label>
+                <label class="field">
+                  <span class="field-label">Note</span>
+                  <textarea class="field-input field-textarea" v-model="editing.note" rows="3" placeholder="Optional note"></textarea>
+                </label>
+              </div>
+              <div class="modal-actions">
+                <button class="modal-btn modal-btn--muted" @click="closeEditor">Cancel</button>
+                <button class="modal-btn modal-btn--primary" @click="saveEdit">Save</button>
+              </div>
             </div>
           </div>
-       </div>
-
-     </div>
+        </main>
+      </div>
    `
 };
 
