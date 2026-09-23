@@ -1261,40 +1261,37 @@ window.ToastUtils = {
 };
 
     </script>
-    <script>
+     <script>
 /**
- * Navigation service: handles bookmark URL navigation, including `%s` placeholder resolution.
+ * SideEffects — the app's I/O boundary: the single module that touches the
+ * browser. Navigation, clipboard, file download, and theme + bookmark
+ * persistence all live here. Depends on window.ToastUtils and
+ * window.BookmarkUtils, both defined above.
+ *
+ *   navigate(bm)              URL navigation; `%s` templates prompt for a term
+ *   copyToClipboard(list)     export the list as JSON to the clipboard
+ *   downloadFile(name,data,mime)  write content to a downloadable file
+ *   getTheme() / setTheme()   read/write the light|dark theme, mirror data-theme
+ *   loadBookmarks(src) / saveBookmarks(list)  localStorage 'bookmarks',
+ *                       falling back to the file's global `bookmarks` array
  */
-window.NavigationService = {
-  navigate(bookmark) {
-    if (bookmark.url.includes('%s')) {
-      this.promptForParameter(bookmark);
-    } else {
-      window.location.href = bookmark.url;
-    }
-  },
+window.SideEffects = {
+   // URL navigation. A `%s` in the URL means "prompt for a search term first."
+  navigate(bm) {
+    if (bm.url.includes('%s')) {
+      const value = prompt('Enter search term:', '');
+      if (value) window.location.href = bm.url.replace('%s', encodeURIComponent(value));
+     } else {
+      window.location.href = bm.url;
+     }
+   },
 
-  promptForParameter(bookmark) {
-    const value = prompt('Enter search term:', '');
-    if (value) {
-      window.location.href = bookmark.url.replace('%s', encodeURIComponent(value));
-    }
-  }
-};
-
-    </script>
-    <script>
-/**
- * Clipboard service: exports bookmarks as JSON to the clipboard.
- * Depends on window.ToastUtils (must be loaded before this script).
- */
-window.ClipboardService = {
-  copyBookmarksToClipboard(bookmarks) {
-    const json = JSON.stringify(bookmarks, null, 2);
+   // Clipboard: export as pretty JSON, fall back to execCommand on failure.
+  copyToClipboard(list) {
+    const json = JSON.stringify(list, null, 2);
     navigator.clipboard.writeText(json)
-      .then(() => window.ToastUtils.toast('Bookmarks copied'))
-      .catch(() => {
-        // Fallback for older browsers
+       .then(() => window.ToastUtils.toast('Bookmarks copied'))
+       .catch(() => {
         const ta = document.createElement('textarea');
         ta.value = json;
         document.body.appendChild(ta);
@@ -1302,19 +1299,11 @@ window.ClipboardService = {
         document.execCommand('copy');
         document.body.removeChild(ta);
         window.ToastUtils.toast('Bookmarks copied');
-      });
-  }
-};
+       });
+   },
 
-    </script>
-    <script>
-/**
- * Download service: writes a generated file to the user's machine via a
- * Blob + temporary <a download> element. Best-effort; notifies via ToastUtils.
- * Depends on window.ToastUtils (must be loaded before this script).
- */
-window.DownloadService = {
-  download(filename, content, mime) {
+   // File download: a Blob + a temporary <a download>. Best-effort, toast-notified.
+  downloadFile(filename, content, mime) {
     try {
       const blob = new Blob([content], { type: mime || 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -1326,18 +1315,59 @@ window.DownloadService = {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       window.ToastUtils.toast(`Downloaded ${filename}`);
-      } catch (e) {
-        window.ToastUtils.toast('Download failed');
-      }
-    }
-};
+     } catch (e) {
+      window.ToastUtils.toast('Download failed');
+     }
+   },
 
-    </script>
+   // Theme persistence: localStorage 'theme' + mirror to <html data-theme>.
+  getTheme() {
+    try {
+      return localStorage.getItem('theme') ||
+         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+     } catch (e) {
+      return 'light';
+     }
+   },
+  setTheme(theme) {
+    try {
+      localStorage.setItem('theme', theme);
+      document.documentElement.setAttribute('data-theme', theme);
+     } catch (e) {
+       /* ignore storage errors */
+     }
+   },
+
+   // Bookmark persistence: localStorage 'bookmarks'; when nothing is stored,
+   // fall back to the file's global `bookmarks` array.
+  loadBookmarks(source) {
+    let data = source;
+    try {
+      const raw = localStorage.getItem('bookmarks');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) data = parsed;
+       }
+     } catch (e) {
+       /* fall back to the file source */
+     }
+    return window.BookmarkUtils.normalizeBookmarks(
+      window.BookmarkUtils.cloneBookmarks(data)
+     );
+   },
+  saveBookmarks(list) {
+    try {
+      localStorage.setItem('bookmarks', JSON.stringify(list));
+     } catch (e) {
+       /* ignore storage errors */
+     }
+   }
+};
+     </script>
     <script>
 /**
  * Vue component definition for the bookmark manager.
- * Relies on window.BookmarkUtils, window.NavigationService,
- * window.ClipboardService, window.DownloadService, window.BookmarkStore —
+ * Relies on window.BookmarkUtils and window.SideEffects —
  * all exposed as globals via script load order.
  */
 window.AppComponent = {
@@ -1345,8 +1375,8 @@ window.AppComponent = {
     return {
       query: '',
       activeTag: '',
-      theme: window.ThemeManager.get(),
-      bookmarks: window.BookmarkStore.load(bookmarks),
+      theme: window.SideEffects.getTheme(),
+      bookmarks: window.SideEffects.loadBookmarks(bookmarks),
       originalBookmarks: window.BookmarkUtils.normalizeBookmarks(
         window.BookmarkUtils.cloneBookmarks(bookmarks)
         ),
@@ -1395,11 +1425,11 @@ window.AppComponent = {
     toggleTheme() {
       const next = this.theme === 'dark' ? 'light' : 'dark';
       this.theme = next;
-      window.ThemeManager.set(next);
+      window.SideEffects.setTheme(next);
      },
 
     navigate(bookmark) {
-      window.NavigationService.navigate(bookmark);
+      window.SideEffects.navigate(bookmark);
      },
 
     goToFirstBookmark() {
@@ -1421,7 +1451,7 @@ window.AppComponent = {
         },
 
     copyBookmarksToClipboard() {
-      window.ClipboardService.copyBookmarksToClipboard(this.bookmarks);
+      window.SideEffects.copyToClipboard(this.bookmarks);
      },
 
     faviconUrl(url) {
@@ -1465,7 +1495,7 @@ window.AppComponent = {
       if (this.isNew) this.bookmarks.push(bm);
        else this.bookmarks.splice(this.editingIndex, 1, bm);
       this.showEditor = false;
-      window.BookmarkStore.save(this.bookmarks);
+      window.SideEffects.saveBookmarks(this.bookmarks);
       window.ToastUtils.toast(this.isNew ? 'Bookmark added' : 'Bookmark saved');
       },
 
@@ -1478,7 +1508,7 @@ window.AppComponent = {
       if (index < 0) return;
       if (!confirm(`Delete "${bookmark.label}"?`)) return;
       this.bookmarks.splice(index, 1);
-      window.BookmarkStore.save(this.bookmarks);
+      window.SideEffects.saveBookmarks(this.bookmarks);
       window.ToastUtils.toast('Bookmark deleted');
       },
 
@@ -1490,7 +1520,7 @@ window.AppComponent = {
         .then(html => {
           const content = window.BookmarkUtils.serializeBookmarks(this.bookmarks);
           const updatedHtml = html.replace(/const bookmarks = \[[\s\S]*?\];\n/, content);
-          window.DownloadService.download('bookmarks.html', updatedHtml, 'text/html');
+          window.SideEffects.downloadFile('bookmarks.html', updatedHtml, 'text/html');
         })
         .catch(() => {
           window.ToastUtils.toast('Download failed');
@@ -1500,7 +1530,7 @@ window.AppComponent = {
     resetBookmarks() {
       if (!confirm('Reset to the original bookmarks.html? Your saved edits will be cleared.')) return;
       this.bookmarks = window.BookmarkUtils.cloneBookmarks(this.originalBookmarks);
-      window.BookmarkStore.save(this.bookmarks);
+      window.SideEffects.saveBookmarks(this.bookmarks);
       window.ToastUtils.toast('Reset to original');
       },
 
@@ -1653,61 +1683,10 @@ window.AppComponent = {
     <script>
 /**
  * Bootstrap: create the Vue application instance and mount it.
- * Depends on: Vue (CDN), window.AppComponent, global `bookmarks` array.
- *
- * Theme handling:
- * - Detect stored theme or system preference before render (see inline script in HTML)
- * - localStorage key: 'theme' ('light' | 'dark')
+ * Depends on: Vue (CDN), window.AppComponent, window.SideEffects, and the
+ * global `bookmarks` array. Theme + bookmark persistence now live in
+ * window.SideEffects, which is defined before this block.
  */
-
-// Expose theme helpers to component
-window.ThemeManager = {
-  get() {
-    try {
-      return localStorage.getItem('theme') ||
-        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    } catch (e) {
-      return 'light';
-    }
-  },
-  set(theme) {
-    try {
-      localStorage.setItem('theme', theme);
-      document.documentElement.setAttribute('data-theme', theme);
-    } catch (e) {
-      /* ignore storage errors */
-    }
-  }
-};
-
-// Persist edits to localStorage (key 'bookmarks'); fall back to the file's
-// global `bookmarks` array when nothing is stored. Mirrors ThemeManager's
-// best-effort storage pattern.
-window.BookmarkStore = {
-  KEY: 'bookmarks',
-  load(source) {
-    let data = source;
-    try {
-      const raw = localStorage.getItem(this.KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) data = parsed;
-       }
-     } catch (e) {
-       /* fall back to the file source */
-     }
-    return window.BookmarkUtils.normalizeBookmarks(
-       window.BookmarkUtils.cloneBookmarks(data)
-     );
-   },
-  save(bookmarks) {
-    try {
-      localStorage.setItem(this.KEY, JSON.stringify(bookmarks));
-     } catch (e) {
-       /* ignore storage errors */
-     }
-   }
-};
 
 const app = Vue.createApp(window.AppComponent);
 

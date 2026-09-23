@@ -38,25 +38,23 @@ Vue (CDN — external <script src="https://unpkg.com/vue@3/dist/vue.global.js">)
  → inline block 1: `const bookmarks = [...]`   (global `bookmarks` data array)
  → inline block 2: `window.BookmarkUtils`
  → inline block 3: `window.ToastUtils`
- → inline block 4: `window.NavigationService`
- → inline block 5: `window.ClipboardService`   (needs ToastUtils)
- → inline block 6: `window.DownloadService`    (needs ToastUtils)
- → inline block 7: `window.AppComponent`       (needs the services + BookmarkUtils + BookmarkStore)
- → inline block 8: `window.ThemeManager` + `window.BookmarkStore` + Vue.createApp(...).mount('#bookmark-app')
+ → inline block 4: `window.SideEffects`        (needs ToastUtils + BookmarkUtils)
+ → inline block 5: `window.AppComponent`        (needs SideEffects + BookmarkUtils)
+ → inline block 6: Vue.createApp(...).mount('#bookmark-app')
 ```
 
 Runtime flow: `const bookmarks` data → `AppComponent.data()` normalizes it via
 `BookmarkUtils` → user types into `query` → `computed.filteredBookmarks`
 filters → `computed.sortedGroupedBookmarks` groups/sorts → template renders
-tag-grouped cards. Clicking a card calls `NavigationService.navigate` (handles
-`%s` search placeholders via `prompt()`). Theme is a separate localStorage-backed
-`ThemeManager`, applied as the `data-theme` attribute on `<html>`.
+tag-grouped cards. Clicking a card calls `SideEffects.navigate` (handles
+`%s` search placeholders via `prompt()`). Theme + the edited list live in
+`SideEffects`, applied as the `data-theme` attribute on `<html>`.
 
 Editing uses a modal: add / edit / delete a bookmark (label, url, tags,
 keywords, note). Every change auto-saves to the `localStorage` key `bookmarks`
-via `window.BookmarkStore` (falling back to the in-file `bookmarks` array when
-nothing is stored); "Download bookmarks.js" serializes the current list with
-`BookmarkUtils.serializeBookmarks` and saves it via `window.DownloadService`.
+via `window.SideEffects` (`loadBookmarks` falling back to the in-file `bookmarks`
+array when nothing is stored); "Download bookmarks.js" serializes the current list with
+`BookmarkUtils.serializeBookmarks` and saves it via `SideEffects.downloadFile`.
 
 **Search semantics** (`AppComponent.filteredBookmarks`): query is trimmed,
 lowercased, split on whitespace; every part must match *some* of
@@ -70,9 +68,9 @@ space-separated parts, OR across fields.
   - a pre-render theme-detection inline script (top of `<head>`);
   - all CSS in a single `<style>` block (design tokens, light + dark themes);
   - the `const bookmarks = [...]` data array;
-  - eight inline `<script>` blocks (BookmarkUtils, ToastUtils, NavigationService,
-    ClipboardService, DownloadService, AppComponent, ThemeManager + BookmarkStore
-    + Vue mount).
+   - six inline `<script>` blocks (BookmarkUtils, ToastUtils, SideEffects,
+    AppComponent, and the Vue mount block); the five former shallow I/O modules
+    (NavigationService/ClipboardService/DownloadService/ThemeManager/BookmarkStore) are now one `SideEffects`.
   - external resources only: Vue 3 CDN + Google Fonts.
 - `README.md` — user-facing usage docs.
 - `.gitignore` (ignores `tmp/`, `.pi/`), `.gitattributes` (`* text=auto`, LF).
@@ -96,12 +94,12 @@ No `npm install`, `npm run build`, or lint/test scripts exist.
 
 - **Globals over modules.** Each inline `<script>` block does
   `window.XxxName = { … }`. Names: `PascalCase` for the `window` object
-  (`AppComponent`, `BookmarkUtils`, `NavigationService`, `ClipboardService`,
-  `ToastUtils`, `ThemeManager`); `camelCase` for its methods
-  (`normalizeBookmarks`, `groupBookmarksByTag`, `faviconUrl`, `navigate`,
-  `copyBookmarksToClipboard`, `toggleTheme`).
-- **Suffixed role naming:** `*Service` = side effects / I/O; `*Utils` = pure
-  helpers. Add new units the same way — a new inline block — not via ES modules.
+   (`AppComponent`, `BookmarkUtils`, `SideEffects`, `ToastUtils`); `camelCase`
+   for its methods (`normalizeBookmarks`, `groupBookmarksByTag`, `faviconUrl`,
+   `navigate`, `copyToClipboard`, `downloadFile`, `getTheme`/`setTheme`,
+   `loadBookmarks`/`saveBookmarks`).
+- **Role naming:** `SideEffects` is the single I/O boundary (nav / clipboard /
+  download / storage); `*Utils` are pure helpers. New I/O goes in `SideEffects`, never its own block.
 - **Order is the dependency graph.** Anything you add that depends on a
   global must appear *after* it in `bookmarks.html`.
 - **Data contract** — a bookmark is `{ label, url, tags, keywords, note? }`.
@@ -110,7 +108,7 @@ No `npm install`, `npm run build`, or lint/test scripts exist.
   → array and fills `note` at load. New entries in the `const bookmarks` array
   should match.
 - **URL `%s` placeholder** — a `url` containing `%s` is a search template;
-  `NavigationService` prompts for the term and `encodeURIComponent`s it before
+  `SideEffects.navigate` prompts for the term and `encodeURIComponent`s it before
   `window.location.href`.
 - **Error handling** — best-effort `try/catch` with silent fallback for
   browser APIs that can throw (`localStorage`, `URL` parsing in `faviconUrl`);
@@ -120,7 +118,7 @@ No `npm install`, `npm run build`, or lint/test scripts exist.
   `fetch` — favicons come from a `<img src>` to Google's favicon service.
 - **State** — Vue reactive component `data()` + `localStorage` keys `theme`
   (`'light'|'dark'`, mirrored to `data-theme` on `<html>`) and `bookmarks`
-  (the edited list, persisted by `window.BookmarkStore`). No global store object.
+   (the edited list, persisted by `window.SideEffects`). No global store object.
 - **Styling** — CSS custom properties (design tokens) in the `<style>` block
   of `bookmarks.html`; light defaults in `:root`, dark overrides in
   `[data-theme="dark"]`. Responsive column counts via `--columns` media
