@@ -38,21 +38,21 @@ each file reads the globals the previous one defined.
 Order (must stay this way — dependencies point downward):
 
 ```
-vue.global.js (CDN — <script src="https://unpkg.com/vue@3/dist/vue.global.js">)
- → bookmarks.js        `const bookmarks = [...]`                  (global data array)
- → bookmark-utils.js   `window.BookmarkUtils`                     (pure helpers)
- → toast-utils.js      `window.ToastUtils`
- → side-effects.js     `window.SideEffects`                       (needs ToastUtils + BookmarkUtils)
- → app.js              `window.AppComponent`                      (needs SideEffects + BookmarkUtils)
+vue.global.js (CDN — <script src="https://unpkg.com/vue@3/dist/vue.global.js">
+ → bookmarks.js          `const bookmarks = [...]`                     (global data array)
+ → bookmark-utils.js     `window.BookmarkUtils`                        (normalization, favicon)
+ → catalog.js            `window.Catalog`                               (filter · group · sort · count)
+ → toast-utils.js        `window.ToastUtils`
+ → side-effects.js       `window.SideEffects`                          (needs ToastUtils + BookmarkUtils)
+ → app.js                `window.AppComponent`                         (needs Catalog + SideEffects + BookmarkUtils)
  → main.js            Vue.createApp(...).mount('#bookmark-app')
 ```
 
 Runtime flow: `const bookmarks` data → `AppComponent.data()` normalizes it via
-`BookmarkUtils` → user types into `query` → `computed.filteredBookmarks`
-filters → `computed.sortedGroupedBookmarks` groups/sorts → template renders
-tag-grouped cards. Clicking a card calls `SideEffects.navigate` (handles
-`%s` search placeholders via `prompt()`). Theme + the edited list live in
-`SideEffects`, applied as the `data-theme` attribute on `<html>`.
+`BookmarkUtils` → user types into `query` → `computed.catalog` (via `Catalog.index`)
+filters → groups/sorts → template renders tag-grouped cards. Clicking a card calls
+`SideEffects.navigate` (handles `%s` search placeholders via `prompt()`). Theme + the
+edited list live in `SideEffects`, applied as the `data-theme` attribute on `<html>`.
 
 Editing uses a modal: add / edit / delete a bookmark (label, url, tags,
 keywords, note). Every change auto-saves to the `localStorage` key `bookmarks`
@@ -60,7 +60,7 @@ via `window.SideEffects` (`loadBookmarks` falling back to the `bookmarks` data
 array in `bookmarks.js` when nothing is stored); "Download bookmarks.js" serializes the current list with
 `BookmarkUtils.serializeBookmarks` and saves it via `SideEffects.downloadFile`.
 
-**Search semantics** (`AppComponent.filteredBookmarks`): query is trimmed,
+**Search semantics** (`Catalog._filter`): query is trimmed,
 lowercased, split on whitespace; every part must match *some* of
 `label`/`tags`/`keywords` (case-insensitive `includes`) — i.e. AND across
 space-separated parts, OR across fields.
@@ -70,14 +70,16 @@ space-separated parts, OR across fields.
 - `bookmarks.html` — the thin entry point. In `<head>` it keeps a pre-render
   theme-detection inline script (runs before paint, to avoid a flash of the wrong
   theme) plus the font `preconnect`/`<link>` and `style.css`; in `<body>` it loads
-  the Vue CDN then the six sibling scripts in dependency order (see Architecture).
+  the Vue CDN then the seven sibling scripts in dependency order (see Architecture).
   The one remaining piece of inline JS is that theme snippet.
 - `style.css` — all CSS: design tokens, light (`:root`) + dark
    (`[data-theme="dark"]`) themes, responsive `--columns` queries. No `@import`.
 - `bookmarks.js` — the `const bookmarks = [...]` data array (the most-edited file;
    re-loadable from the "Download bookmarks.js" button).
-- `bookmark-utils.js` — `window.BookmarkUtils` (normalization, grouping, favicon,
-   `serializeBookmarks`).
+- `bookmark-utils.js` — `window.BookmarkUtils` (normalization, favicon,
+     `serializeBookmarks`).
+- `catalog.js` — `window.Catalog`, the query pipeline (filter · group · sort ·
+   count). Pure: `index(list, query) → { groups, total }`. No DOM, no Vue.
 - `toast-utils.js` — `window.ToastUtils` (toast notifications).
 - `side-effects.js` — `window.SideEffects`, the single I/O boundary (nav / clipboard /
    download / storage); the five former shallow I/O modules
@@ -108,10 +110,10 @@ No `npm install`, `npm run build`, or lint/test scripts exist.
 - **Globals over modules.** Each `.js` module — a classic `<script src>` loaded in
    dependency order — does `window.XxxName = { … }`. Names: `PascalCase` for
    the `window` object
-   (`AppComponent`, `BookmarkUtils`, `SideEffects`, `ToastUtils`); `camelCase`
-   for its methods (`normalizeBookmarks`, `groupBookmarksByTag`, `faviconUrl`,
-   `navigate`, `copyToClipboard`, `downloadFile`, `getTheme`/`setTheme`,
-   `loadBookmarks`/`saveBookmarks`).
+      (`AppComponent`, `BookmarkUtils`, `Catalog`, `SideEffects`, `ToastUtils`); `camelCase`
+   for its methods (`normalizeBookmarks`, `faviconUrl`, `index`, `navigate`,
+      `copyToClipboard`, `downloadFile`, `getTheme`/`setTheme`,
+      `loadBookmarks`/`saveBookmarks`).
 - **Role naming:** `SideEffects` is the single I/O boundary (nav / clipboard /
   download / storage); `*Utils` are pure helpers. New I/O goes in `SideEffects`, never its own block.
 - **Order is the dependency graph.** Anything you add that depends on a

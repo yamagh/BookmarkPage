@@ -1,5 +1,6 @@
 /**
- * Bookmark utilities: normalization, grouping, and favicon resolution.
+ * Bookmark utilities: normalization and favicon resolution.
+ * Grouping/sorting moved to window.Catalog.
  */
 window.BookmarkUtils = {
   normalizeBookmarks(bookmarks) {
@@ -33,16 +34,6 @@ window.BookmarkUtils = {
       });
     return `const bookmarks = [\n${items.join(',\n')}\n];\n`;
     },
-  groupBookmarksByTag(bookmarks) {
-    const grouped = {};
-    for (const bm of bookmarks) {
-      for (const tag of bm.tags) {
-        if (!grouped[tag]) grouped[tag] = [];
-        grouped[tag].push(bm);
-      }
-    }
-    return grouped;
-  },
 
   faviconUrl(url) {
     try {
