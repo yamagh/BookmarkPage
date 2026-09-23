@@ -12,6 +12,17 @@ Stack: **vanilla JavaScript + Vue 3 loaded from a CDN**. No build step, no
 package manager, no bundler, no tests. The entire app lives in a single
 self-contained file.
 
+## Requirements
+
+- `bookmarks.html` **must open and run when opened directly via `file://`** —
+  no web server, no build step, no package manager. After any change the file must
+  still work when opened straight from disk.
+- A local HTTP server is **optional** (see Development Commands): it only improves
+  clipboard copy and remote favicons, so it must never become a prerequisite. Keep
+  the single self-contained file loading purely from `https://` CDNs (Vue 3,
+  Google Fonts); a local import/ES module, fetch/XHR, or bundler output would break
+  `file://` and must be avoided.
+
 ## Architecture & Data Flow
 
 The app uses a **global-script (no-module) architecture**. There is no
@@ -68,10 +79,11 @@ space-separated parts, OR across fields.
 
 ## Development Commands
 
-There is **no build and no package manager**. Serve the folder statically and
-open it in a browser. Use a local HTTP server rather than `file://` — the
-clipboard feature needs a secure context (`navigator.clipboard`), and favicons
-are fetched from `t2.google.com`:
+There is **no build and no package manager**. The app opens by **opening
+`bookmarks.html` directly via `file://`** — no server needed (see Requirements).
+A local HTTP server is **optional**: it only helps the clipboard copy feature
+(preferred in a secure context) and remote favicons from `t2.google.com`. If you
+run one anyway:
 
 ```bash
 python3 -m http.server 8000        # or: npx serve .  /  bun --builtin ...
