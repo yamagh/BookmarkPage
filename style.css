@@ -129,11 +129,25 @@ body::after {
   position: sticky;
   top: 56px;
   align-self: start;
+  max-height: calc(100vh - 72px);
+  overflow-y: auto;
   padding-right: var(--space-xxl);
   padding-bottom: var(--space-l);
   border-right: 1px solid var(--hairline);
   min-width: 0;
   transition: border-color var(--transition);
+}
+
+/* Thinner scrollbar for the index rail so it feels quiet */
+.index-rail::-webkit-scrollbar {
+  width: 4px;
+}
+.index-rail::-webkit-scrollbar-thumb {
+  background: var(--hairline);
+  border-radius: 2px;
+}
+.index-rail::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .masthead {
