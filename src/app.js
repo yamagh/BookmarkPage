@@ -37,38 +37,16 @@ window.AppComponent = {
     treeFlat() {
       const expanded = this.expandedTags;
       const result = [];
-      const walk = (nodes, depth) => {
+      const walk = (nodes) => {
         for (const node of nodes) {
-          result.push({
-            tag: node.tag,
-            display: node.tag.split('/').pop(),
-            count: node.count,
-            depth,
-            hasChildren: !!(node.children && node.children.length),
-            expanded: !!expanded[node.tag]
-          });
-          if (expanded[node.tag] && node.children) {
-            walk(node.children, depth + 1);
-          }
-        }
-      };
-      walk(this.catalog.tree, 0);
+          result.push({ ...node, expanded: !!expanded[node.tag] });
+          if (expanded[node.tag] && node.children) walk(node.children);
+         }
+       };
+      walk(this.catalog.tree);
       return result;
-    },
+     },
 
-    displayGroups() {
-      return this.catalog.groups.map(g => {
-        const parts = g.tag.split('/');
-        return {
-          tag: g.tag,
-          items: g.items,
-          count: g.count,
-          hasPath: parts.length > 1,
-          root: parts.length > 1 ? parts.slice(0, -1).join('/') : null,
-          leaf: parts.length > 1 ? parts[parts.length - 1] : g.tag
-        };
-      });
-    },
 
     renameCount() {
       if (!this.renamingTag) return 0;
@@ -361,7 +339,7 @@ window.AppComponent = {
 
             <div class="tag-groups" v-else>
               <ul>
-                 <li v-for="(group, i) in displayGroups" :key="group.tag"
+                  <li v-for="(group, i) in catalog.groups" :key="group.tag"
                 class="tag" :id="'group-' + i">
                  <div class="tag-content">
                    <div class="tag-head">

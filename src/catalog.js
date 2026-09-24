@@ -8,7 +8,7 @@ window.Catalog = {
    * Run the full pipeline: filter → group by tag → sort tags → count.
    * @param {Array} list  normalized bookmarks ({ label, url, tags[], keywords[], note })
    * @param {string} query raw search string
-   * @returns {{ groups: Array<{tag, items, count}>, tree: Array<{tag, items, count, children}>, total: number }}
+    * @returns {{ groups: Array<{tag, items, count, hasPath, root, leaf}>, tree: Array<{tag, display, items, count, depth, hasChildren, children?}>, total: number }}
    */
   index(list, query) {
     const filtered = Catalog._filter(list, query);
@@ -55,10 +55,21 @@ window.Catalog = {
     return grouped;
    },
 
-  _sortGroups(grouped) {
-    return Object.keys(grouped)
-      .sort((a, b) => a.localeCompare(b))
-      .map(tag => ({ tag, items: grouped[tag], count: grouped[tag].length }));
-   },
-  
+   _sortGroups(grouped) {
+      return Object.keys(grouped)
+        .sort((a, b) => a.localeCompare(b))
+        .map(tag => {
+          const parts = tag.split('/');
+          const hasPath = parts.length > 1;
+          return {
+            tag,
+            items: grouped[tag],
+            count: grouped[tag].length,
+            hasPath,
+            root: hasPath ? parts.slice(0, -1).join('/') : null,
+            leaf: hasPath ? parts[parts.length - 1] : tag
+          };
+        });
+    },
+
 }

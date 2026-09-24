@@ -3,30 +3,42 @@
  * Pure: no DOM, no Vue, no I/O. Mirrors Catalog's precedent.
  */
 window.Tags = {
-  /**
-   * Build a nested tree from a flat, sorted group list.
-   * Parent nodes' `count` is overwritten with the unique-URL count of their subtree.
-   * @param {Array<{tag: string, items: Array, count: number}>} groups sorted flat groups
-   * @returns {Array<{tag, items, count, children?: Array}>} root nodes
-   */
+   /**
+    * Build a nested, view-ready tree from a flat, sorted group list.
+    * Each node carries `display` (last path segment), `depth`, and `hasChildren`.
+    * Parent nodes' `count` is overwritten with the unique-URL count of their subtree.
+    * @param {Array<{tag: string, items: Array, count: number}>} groups sorted flat groups
+    * @returns {Array<{tag, display, items, count, depth, hasChildren, children?: Array}>} root nodes
+    */
   tree(groups) {
     const root = [];
     const map = new Map();
     for (const g of groups) {
-      map.set(g.tag, { tag: g.tag, items: g.items, count: g.count, children: null });
+      const parts = g.tag.split('/');
+      map.set(g.tag, {
+        tag: g.tag,
+        display: parts[parts.length - 1],
+        items: g.items,
+        count: g.count,
+        children: null
+      });
     }
     // Attach each group to its parent (if the parent path exists in the map)
     for (const [key, node] of map.entries()) {
       const parts = key.split('/');
       if (parts.length === 1) {
+        node.depth = 0;
         root.push(node);
       } else {
         const parentKey = parts.slice(0, -1).join('/');
         const parent = map.get(parentKey);
         if (parent) {
           if (!parent.children) parent.children = [];
+          parent.hasChildren = true;
+          node.depth = parent.depth + 1;
           parent.children.push(node);
         } else {
+          node.depth = 0;
           root.push(node);
         }
       }
