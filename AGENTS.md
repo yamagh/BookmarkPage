@@ -10,7 +10,7 @@ also be edited in-page (add / edit / delete, with an optional per-bookmark
 
 Stack: **vanilla JavaScript + Vue 3 loaded from a CDN**. No build step, no
 package manager, no bundler, no tests. The app is split into a thin `bookmarks.html`
-plus a sibling `style.css` and dependency-ordered classic `.js` files (no modules),
+plus a `src/` directory of dependency-ordered classic `.js` files (no modules),
 all openable straight from disk via `file://`.
 
 ## Requirements
@@ -39,13 +39,13 @@ Order (must stay this way — dependencies point downward):
 
 ```
 vue.global.js (CDN — <script src="https://unpkg.com/vue@3/dist/vue.global.js">
- → bookmarks.js          `const bookmarks = [...]`                     (global data array)
- → bookmark-utils.js     `window.BookmarkUtils`                        (normalization, favicon)
- → catalog.js            `window.Catalog`                               (filter · group · sort · count)
- → toast-utils.js        `window.ToastUtils`
- → side-effects.js       `window.SideEffects`                          (needs ToastUtils + BookmarkUtils)
- → app.js                `window.AppComponent`                         (needs Catalog + SideEffects + BookmarkUtils)
- → main.js            Vue.createApp(...).mount('#bookmark-app')
+ → bookmarks.js           `const bookmarks = [...]`                      (root: global data array)
+ → src/bookmark-utils.js `window.BookmarkUtils`                         (normalization, favicon)
+ → src/catalog.js        `window.Catalog`                                (filter · group · sort · count)
+ → src/toast-utils.js    `window.ToastUtils`
+ → src/side-effects.js   `window.SideEffects`                           (needs ToastUtils + BookmarkUtils)
+ → src/app.js            `window.AppComponent`                          (needs Catalog + SideEffects + BookmarkUtils)
+ → src/main.js           Vue.createApp(...).mount('#bookmark-app')
 ```
 
 Runtime flow: `const bookmarks` data → `AppComponent.data()` normalizes it via
@@ -69,23 +69,22 @@ space-separated parts, OR across fields.
 
 - `bookmarks.html` — the thin entry point. In `<head>` it keeps a pre-render
   theme-detection inline script (runs before paint, to avoid a flash of the wrong
-  theme) plus the font `preconnect`/`<link>` and `style.css`; in `<body>` it loads
-  the Vue CDN then the seven sibling scripts in dependency order (see Architecture).
-  The one remaining piece of inline JS is that theme snippet.
-- `style.css` — all CSS: design tokens, light (`:root`) + dark
-   (`[data-theme="dark"]`) themes, responsive `--columns` queries. No `@import`.
-- `bookmarks.js` — the `const bookmarks = [...]` data array (the most-edited file;
+  theme) plus the font `preconnect`/`<link>` and `src/style.css`; in `<body>` it loads
+  the Vue CDN, then `bookmarks.js` (root), then the six `src/` scripts in dependency order.
+- `bookmarks.js` — the `const bookmarks = [...]` data array (root; the most-edited file;
    re-loadable from the "Download bookmarks.js" button).
-- `bookmark-utils.js` — `window.BookmarkUtils` (normalization, favicon,
-     `serializeBookmarks`).
-- `catalog.js` — `window.Catalog`, the query pipeline (filter · group · sort ·
+- `src/style.css` — all CSS: design tokens, light (`:root`) + dark
+   (`[data-theme="dark"]`) themes, responsive `--columns` queries. No `@import`.
+- `src/bookmark-utils.js` — `window.BookmarkUtils` (normalization, favicon,
+      `serializeBookmarks`).
+- `src/catalog.js` — `window.Catalog`, the query pipeline (filter · group · sort ·
    count). Pure: `index(list, query) → { groups, total }`. No DOM, no Vue.
-- `toast-utils.js` — `window.ToastUtils` (toast notifications).
-- `side-effects.js` — `window.SideEffects`, the single I/O boundary (nav / clipboard /
+- `src/toast-utils.js` — `window.ToastUtils` (toast notifications).
+- `src/side-effects.js` — `window.SideEffects`, the single I/O boundary (nav / clipboard /
    download / storage); the five former shallow I/O modules
    (NavigationService/ClipboardService/DownloadService/ThemeManager/BookmarkStore) are now one `SideEffects`.
-- `app.js` — `window.AppComponent` (the Vue component + its template string).
-- `main.js` — bootstrap: `Vue.createApp(window.AppComponent).mount('#bookmark-app')`.
+- `src/app.js` — `window.AppComponent` (the Vue component + its template string).
+- `src/main.js` — bootstrap: `Vue.createApp(window.AppComponent).mount('#bookmark-app')`.
 - external resources only beyond the above: Vue 3 CDN + Google Fonts.
 - `README.md` — user-facing usage docs.
 - `.gitignore` (ignores `tmp/`, `.pi/`), `.gitattributes` (`* text=auto`, LF).
@@ -118,7 +117,7 @@ No `npm install`, `npm run build`, or lint/test scripts exist.
   download / storage); `*Utils` are pure helpers. New I/O goes in `SideEffects`, never its own block.
 - **Order is the dependency graph.** Anything you add that depends on a
   global must appear *after* it in the script order of `bookmarks.html`; a new
-  module becomes a new `file.js` added after the one it depends on.
+  module becomes a new `src/file.js` added after the one it depends on.
 - **Data contract** — a bookmark is `{ label, url, tags, keywords, note? }`.
   `tags` and `keywords` may be a string or array and `note` is an optional
   string (defaults to `''`); `BookmarkUtils.normalizeBookmarks` coerces string
@@ -136,7 +135,7 @@ No `npm install`, `npm run build`, or lint/test scripts exist.
 - **State** — Vue reactive component `data()` + `localStorage` keys `theme`
   (`'light'|'dark'`, mirrored to `data-theme` on `<html>`) and `bookmarks`
    (the edited list, persisted by `window.SideEffects`). No global store object.
-- **Styling** — CSS custom properties (design tokens) in `style.css`; light
+- **Styling** — CSS custom properties (design tokens) in `src/style.css`; light
   defaults in `:root`, dark overrides in
   `[data-theme="dark"]`. Responsive column counts via `--columns` media
   queries. Reuse tokens; don't hardcode colors/spacing.
