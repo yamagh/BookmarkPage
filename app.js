@@ -17,15 +17,52 @@ window.AppComponent = {
       showEditor: false,
       isNew: false,
       editingIndex: -1,
-      editing: { label: '', url: '', tags: '', keywords: '', note: '' }
-       };
-    },
+      editing: { label: '', url: '', tags: '', keywords: '', note: '' },
+      expandedTags: {}
+    };
+  },
 
   computed: {
     catalog() {
       return window.Catalog.index(this.bookmarks, this.query);
-      },
-     },
+        },
+
+       treeFlat() {
+        const expanded = this.expandedTags;
+        const result = [];
+        const walk = (nodes, depth) => {
+          for (const node of nodes) {
+            result.push({
+        tag: node.tag,
+        display: node.tag.split('/').pop(),
+              count: node.count,
+              depth,
+              hasChildren: !!(node.children && node.children.length),
+              expanded: !!expanded[node.tag]
+            });
+            if (expanded[node.tag] && node.children) {
+              walk(node.children, depth + 1);
+            }
+          }
+        };
+        walk(this.catalog.tree, 0);
+        return result;
+        },
+
+       displayGroups() {
+        return this.catalog.groups.map(g => {
+          const parts = g.tag.split('/');
+          return {
+            tag: g.tag,
+            items: g.items,
+            count: g.count,
+            hasPath: parts.length > 1,
+            root: parts.length > 1 ? parts.slice(0, -1).join('/') : null,
+            leaf: parts.length > 1 ? parts[parts.length - 1] : g.tag
+          };
+        });
+        }
+       },
 
   methods: {
     toggleTheme() {
@@ -54,6 +91,11 @@ window.AppComponent = {
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       this.activeTag = tag;
        },
+
+    toggleExpand(tag) {
+      this.expandedTags[tag] = !this.expandedTags[tag];
+      },
+
 
     copyBookmarksToClipboard() {
       window.SideEffects.copyToClipboard(this.bookmarks);
@@ -154,17 +196,20 @@ window.AppComponent = {
              <span class="rail-count-label">entries</span>
            </div>
 
-           <nav class="tag-index">
-             <p class="tag-index-title">Index</p>
-             <ul class="tag-index-list">
-               <li v-for="(entry, i) in catalog.groups" :key="entry.tag"
-                class="tag-index-item" :class="{ 'is-active': activeTag === entry.tag }"
-                @click="scrollToTag(entry.tag)">
-                <span class="tag-index-name">{{ entry.tag }}</span>
-                <span class="tag-index-count">{{ entry.count }}</span>
-              </li>
-            </ul>
-           </nav>
+            <nav class="tag-index">
+              <p class="tag-index-title">Index</p>
+              <ul class="tag-index-list">
+                <li v-for="(entry, i) in treeFlat" :key="entry.tag"
+                    class="tag-index-item"
+                    :class="{ 'is-active': activeTag === entry.tag, 'has-children': entry.hasChildren }"
+                    :style="{ paddingLeft: (entry.depth > 0 ? entry.depth * 14 : 0) + 'px' }"
+                    @click="entry.hasChildren ? toggleExpand(entry.tag) : scrollToTag(entry.tag)">
+                  <span v-if="entry.hasChildren" class="tag-index-chev">{{ entry.expanded ? '▾' : '▸' }}</span>
+                   <span class="tag-index-name">{{ entry.display }}</span>
+                  <span class="tag-index-count">{{ entry.count }}</span>
+                </li>
+              </ul>
+            </nav>
 
            <div class="rail-meta">
              <span>{{ catalog.total }} bookmark{{ catalog.total !== 1 ? 's' : '' }}</span>
@@ -214,12 +259,19 @@ window.AppComponent = {
 
            <div class="tag-groups" v-else>
              <ul>
-               <li v-for="(group, i) in catalog.groups" :key="group.tag"
+                <li v-for="(group, i) in displayGroups" :key="group.tag"
                 class="tag" :id="'group-' + i">
                 <div class="tag-content">
                   <div class="tag-head">
                     <span class="tag-number">{{ String(i + 1).padStart(2, '0') }}</span>
-                    <span class="tag-name">{{ group.tag }}</span>
+                      <span class="tag-name">
+                        <template v-if="group.hasPath">
+                          <span class="tag-path-root">{{ group.root }}</span>
+                          <span class="tag-path-sep"> / </span>
+                          <span class="tag-path-leaf">{{ group.leaf }}</span>
+                        </template>
+                        <template v-else>{{ group.tag }}</template>
+                      </span>
                     <span class="tag-count">{{ group.count }}</span>
                   </div>
                   <ul>
@@ -254,7 +306,7 @@ window.AppComponent = {
                    <input class="field-input" v-model="editing.url" placeholder="https://…      (%s = search term)" autocomplete="off" />
                  </label>
                  <label class="field">
-                   <span class="field-label">Tags <em>(comma separated)</em></span>
+                    <span class="field-label">Tags <em>(comma separated, / for hierarchy)</em></span>
                    <input class="field-input" v-model="editing.tags" placeholder="🧰 Tools, 🌍 Web" autocomplete="off" />
                  </label>
                  <label class="field">

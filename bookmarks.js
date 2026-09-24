@@ -181,5 +181,29 @@ const bookmarks = [
     "url": "https://www.espn.com/",
     "tags": ["🏅 Sports"],
     "keywords": ["espn","sport"]
-  }
+   },
+   {
+     "label": "Gmail",
+     "url": "https://mail.google.com",
+     "tags": ["🌍 Web / Email"],
+     "keywords": ["gmail","email"]
+   },
+   {
+     "label": "Google Maps",
+     "url": "https://www.google.com/maps",
+     "tags": ["🌍 Web / Maps"],
+     "keywords": ["maps","gmaps"]
+   },
+   {
+     "label": "2026 年9月",
+     "url": "https://www.google.com/search?q=2026+09",
+     "tags": ["📅 2026 / 09"],
+     "keywords": ["2026","sept"]
+   },
+   {
+     "label": "2026 年8月",
+     "url": "https://www.google.com/search?q=2026+08",
+     "tags": ["📅 2026 / 08"],
+     "keywords": ["2026","aug"]
+   }
 ];

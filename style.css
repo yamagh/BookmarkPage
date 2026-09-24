@@ -250,7 +250,7 @@ body::after {
 .tag-index-item {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--space-s);
   padding: 4px 0;
   cursor: pointer;
@@ -275,6 +275,7 @@ body::after {
 }
 
 .tag-index-name {
+  flex: 1 1 auto;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -992,3 +993,41 @@ li.item:hover .item-actions {
 }
 
 
+
+
+.tag-index-chev {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  flex: 0 0 auto;
+  width: 10px;
+  text-align: center;
+  transition: color var(--transition);
+}
+
+.tag-index-item.has-children .tag-index-chev {
+  color: var(--accent);
+}
+
+/* tag-groups path rendering — parent muted, leaf primary */
+.tag-path-root {
+  color: var(--text-tertiary);
+  font-family: "Instrument Sans", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  font-optical-sizing: auto;
+  transition: color var(--transition);
+}
+
+.tag-path-sep {
+  color: var(--text-tertiary);
+  margin: 0 2px;
+}
+
+.tag-path-leaf {
+  color: var(--text-primary);
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -.01em;
+  transition: color var(--transition);
+}
