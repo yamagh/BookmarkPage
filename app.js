@@ -18,8 +18,12 @@ window.AppComponent = {
       isNew: false,
       editingIndex: -1,
       editing: { label: '', url: '', tags: '', keywords: '', note: '' },
-      expandedTags: {}
-    };
+      expandedTags: {},
+        // rename tag modal state
+      showRename: false,
+      renamingTag: '',
+      newTag: ''
+       };
   },
 
   computed: {
@@ -61,8 +65,14 @@ window.AppComponent = {
             leaf: parts.length > 1 ? parts[parts.length - 1] : g.tag
           };
         });
-        }
-       },
+         },
+
+        renameCount() {
+            if (!this.renamingTag) return 0;
+            return this.bookmarks.filter(bm => (bm.tags || []).includes(this.renamingTag)).length;
+            },
+         },
+
 
   methods: {
     toggleTheme() {
@@ -174,7 +184,36 @@ window.AppComponent = {
 
     toList(value) {
       return String(value || '').split(',').map(s => s.trim()).filter(Boolean);
-       }
+         },
+
+         // --- bulk tag rename ---
+       openRename(tag) {
+          this.renamingTag = tag;
+          this.newTag = '';
+          this.showRename = true;
+           },
+        closeRename() {
+          this.showRename = false;
+           },
+         doRename() {
+          const oldTag = this.renamingTag.trim();
+          const newTag = this.newTag.trim();
+          if (!newTag) {
+            window.ToastUtils.toast('New tag name is required');
+            return;
+            }
+          const count = window.BookmarkUtils.renameTags(this.bookmarks, oldTag, newTag);
+          if (count === 0) {
+            window.ToastUtils.toast(`No bookmarks found with tag "${oldTag}"`);
+            this.showRename = false;
+            return;
+            }
+          if (this.activeTag === oldTag) this.activeTag = newTag;
+          this.showRename = false;
+          window.SideEffects.saveBookmarks(this.bookmarks);
+          window.ToastUtils.toast(`Renamed "${oldTag}" → "${newTag}" (${count})`);
+           },
+
      },
 
   mounted() {
@@ -207,6 +246,8 @@ window.AppComponent = {
                   <span v-if="entry.hasChildren" class="tag-index-chev">{{ entry.expanded ? '▾' : '▸' }}</span>
                    <span class="tag-index-name">{{ entry.display }}</span>
                   <span class="tag-index-count">{{ entry.count }}</span>
+                  <button class="tag-index-rename" title="Rename tag" @click.stop="openRename(entry.tag)">✎</button>
+
                 </li>
               </ul>
             </nav>
@@ -324,6 +365,31 @@ window.AppComponent = {
                </div>
              </div>
            </div>
+
+           <!-- Rename tag modal -->
+           <div class="modal-overlay" v-if="showRename" @click.self="closeRename">
+             <div class="modal" role="dialog" aria-modal="true" @click.stop>
+               <h2 class="modal-title">Rename tag</h2>
+               <div class="modal-body">
+                 <label class="field">
+                   <span class="field-label">Current tag</span>
+                   <input class="field-input" v-model="renamingTag" autocomplete="off" />
+                 </label>
+                 <label class="field">
+                   <span class="field-label">New tag name</span>
+                   <input class="field-input" v-model="newTag" @keyup.enter="doRename" placeholder="Enter new tag…" autocomplete="off" />
+                 </label>
+                 <p class="rename-hint" v-if="renamingTag">
+                   {{ renameCount }} bookmark{{ renameCount !== 1 ? 's' : '' }} with this tag will be updated.
+                 </p>
+               </div>
+               <div class="modal-actions">
+                 <button class="modal-btn modal-btn--muted" @click="closeRename">Cancel</button>
+                 <button class="modal-btn modal-btn--primary" @click="doRename" :disabled="!newTag.trim() || newTag.trim() === (renamingTag || '').trim()">Rename</button>
+               </div>
+             </div>
+           </div>
+
          </main>
        </div>
     `

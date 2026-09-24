@@ -1,6 +1,5 @@
 /**
- * Bookmark utilities: normalization and favicon resolution.
- * Grouping/sorting moved to window.Catalog.
+ * Bookmark utilities: normalization, favicon, and tag rename.
  */
 window.BookmarkUtils = {
   normalizeBookmarks(bookmarks) {
@@ -18,9 +17,9 @@ window.BookmarkUtils = {
 
   serializeBookmarks(bookmarks) {
     const asArray = v => Array.isArray(v) ? v
-       : (typeof v === 'string' && v.trim()) ? [v]
-       : [];
-    const pad = '  ';
+        : (typeof v === 'string' && v.trim()) ? [v]
+        : [];
+    const pad = '   ';
     const items = bookmarks.map(bm => {
       const field = (key, val) => `${pad}${pad}"${key}": ${JSON.stringify(val)}`;
       const lines = [
@@ -28,12 +27,32 @@ window.BookmarkUtils = {
         field('url', bm.url || ''),
         field('tags', asArray(bm.tags)),
         field('keywords', asArray(bm.keywords))
-       ];
+        ];
       if (bm.note) lines.push(field('note', bm.note));
       return `${pad}{\n${lines.join(',\n')}\n${pad}}`;
       });
     return `const bookmarks = [\n${items.join(',\n')}\n];\n`;
-    },
+   },
+
+  /**
+   * Rename a tag across the entire bookmark list.
+   * @param {Array} list     normalized bookmarks
+   * @param {string} oldTag  exact tag string to replace
+   * @param {string} newTag  replacement string (empty string = delete the tag)
+   * @returns {number} count of bookmarks that were changed
+   */
+  renameTags(list, oldTag, newTag) {
+    let changed = 0;
+    for (const bm of list) {
+      const tags = bm.tags || [];
+      if (!tags.includes(oldTag)) continue;
+      const newTags = tags.filter(t => t !== oldTag);
+      if (newTag && !newTags.includes(newTag)) newTags.push(newTag);
+      bm.tags = newTags;
+      changed++;
+     }
+    return changed;
+   },
 
   faviconUrl(url) {
     try {
@@ -41,6 +60,6 @@ window.BookmarkUtils = {
       return `https://t2.google.com/favicon?sz=16&domain=${u.hostname}`;
     } catch {
       return null;
-    }
+     }
   }
 };
