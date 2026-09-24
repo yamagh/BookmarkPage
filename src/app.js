@@ -77,26 +77,20 @@ window.AppComponent = {
 
     // --- tag picker computed ---
     allTags() {
-      const set = new Set();
-      for (const bm of this.bookmarks) {
-        for (const t of (bm.tags || [])) set.add(t);
-      }
-      return Array.from(set).sort((a, b) => a.localeCompare(b));
-    },
+      return window.Tags.collect(this.bookmarks);
+     },
 
     editingTags() {
       return this.toList(this.editing.tags);
     },
 
     tagSuggestions() {
-      const q = this.tagInput.trim().toLowerCase();
-      const selected = new Set(this.editingTags);
-      let tags = this.allTags;
-      if (q) {
-        tags = tags.filter(t => t.toLowerCase().includes(q));
-      }
-      return tags.filter(t => !selected.has(t)).slice(0, 30);
-    }
+      return window.Tags.suggest(
+        this.allTags,
+        this.editingTags,
+        this.tagInput.trim().toLowerCase()
+      );
+     }
   },
 
 
@@ -269,7 +263,7 @@ window.AppComponent = {
         window.ToastUtils.toast('New tag name is required');
         return;
       }
-      const count = window.BookmarkUtils.renameTags(this.bookmarks, oldTag, newTag);
+      const count = window.Tags.rename(this.bookmarks, oldTag, newTag);
       if (count === 0) {
         window.ToastUtils.toast(`No bookmarks found with tag "${oldTag}"`);
         this.showRename = false;

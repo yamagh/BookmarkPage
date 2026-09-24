@@ -1,5 +1,5 @@
 /**
- * Bookmark utilities: normalization, favicon, and tag rename.
+ * Bookmark utilities: normalization, favicon, and serialization.
  */
 window.BookmarkUtils = {
   normalizeBookmarks(bookmarks) {
@@ -34,25 +34,7 @@ window.BookmarkUtils = {
     return `const bookmarks = [\n${items.join(',\n')}\n];\n`;
    },
 
-  /**
-   * Rename a tag across the entire bookmark list.
-   * @param {Array} list     normalized bookmarks
-   * @param {string} oldTag  exact tag string to replace
-   * @param {string} newTag  replacement string (empty string = delete the tag)
-   * @returns {number} count of bookmarks that were changed
-   */
-  renameTags(list, oldTag, newTag) {
-    let changed = 0;
-    for (const bm of list) {
-      const tags = bm.tags || [];
-      if (!tags.includes(oldTag)) continue;
-      const newTags = tags.filter(t => t !== oldTag);
-      if (newTag && !newTags.includes(newTag)) newTags.push(newTag);
-      bm.tags = newTags;
-      changed++;
-     }
-    return changed;
-   },
+
 
   faviconUrl(url) {
     try {

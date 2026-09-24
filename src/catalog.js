@@ -1,7 +1,7 @@
 /**
  * Catalog: the query pipeline — filter, group, sort, count.
- * Pure: takes a normalized bookmark list and a query string,
- * returns grouped, sorted, indexed results. No DOM, no Vue.
+ * Pure: takes a normalized list and a query, returns grouped/sorted results.
+ * Depends on window.Tags (loaded before this file) for tree-building.
  */
 window.Catalog = {
   /**
@@ -15,7 +15,7 @@ window.Catalog = {
     const grouped = Catalog._groupByTag(filtered);
     const groups = Catalog._sortGroups(grouped);
     const total = groups.reduce((n, g) => n + g.count, 0);
-    const tree = Catalog._buildTree(groups);
+    const tree = Tags.tree(groups);
     return { groups, tree, total };
   },
 
@@ -60,44 +60,5 @@ window.Catalog = {
       .sort((a, b) => a.localeCompare(b))
       .map(tag => ({ tag, items: grouped[tag], count: grouped[tag].length }));
    },
-
-   _buildTree(groups) {
-    // Convert the flat, sorted group list into a nested tree of {tag, items, count, children}
-    const root = [];
-    const map = new Map();
-    for (const g of groups) {
-      map.set(g.tag, { tag: g.tag, items: g.items, count: g.count, children: null });
-    }
-    // Attach each group to its parent (if the parent path is also a group)
-    for (const [key, node] of map.entries()) {
-      const parts = key.split('/');
-      if (parts.length === 1) {
-        root.push(node);
-      } else {
-        const parentKey = parts.slice(0, -1).join('/');
-        const parent = map.get(parentKey);
-        if (parent) {
-          if (!parent.children) parent.children = [];
-          parent.children.push(node);
-        } else {
-          root.push(node);
-        }
-      }
-    }
-    // Overwrite count on parent nodes so it reflects unique URLs in the whole subtree
-    const collectUrls = (node, urls) => {
-      for (const item of node.items) urls.add(item.url);
-      if (node.children) for (const c of node.children) collectUrls(c, urls);
-    };
-    for (const node of root) {
-      if (node.children) {
-        // Sort children alphabetically by full path
-        node.children.sort((a, b) => a.tag.localeCompare(b.tag));
-        const urls = new Set();
-        collectUrls(node, urls);
-        node.count = urls.size;
-      }
-    }
-    return root;
-   }
+  
 }
