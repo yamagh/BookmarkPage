@@ -744,14 +744,6 @@ li.item:hover .item-actions {
   color: var(--accent);
 }
 
-.item-action--danger:hover {
-  color: #c0392b;
-}
-
-[data-theme="dark"] .item-action--danger:hover {
-  color: #e07a6e;
-}
-
 /* ============================================
    TOAST NOTIFICATION — bottom-center, accent edge
      ============================================ */
@@ -917,6 +909,16 @@ li.item:hover .item-actions {
 
 .modal-btn--primary:hover {
   filter: brightness(1.06);
+}
+.modal-btn--danger {
+  margin-right: auto;
+  color: #c0392b;
+  border-color: #c0392b;
+}
+
+.modal-btn--danger:hover {
+  background: #c0392b;
+  color: #fff;
 }
 
 /* ============================================

@@ -160,11 +160,11 @@ window.AppComponent = {
       this.openEdit(null);
        },
 
-    deleteBookmark(bookmark) {
-      const index = this.bookmarks.indexOf(bookmark);
-      if (index < 0) return;
-      if (!confirm(`Delete "${bookmark.label}"?`)) return;
-      this.bookmarks.splice(index, 1);
+    deleteEditingBookmark() {
+      if (this.isNew) return;
+      if (!confirm(`Delete "${this.editing.label}"?`)) return;
+      this.bookmarks.splice(this.editingIndex, 1);
+      this.showEditor = false;
       window.SideEffects.saveBookmarks(this.bookmarks);
       window.ToastUtils.toast('Bookmark deleted');
        },
@@ -324,7 +324,6 @@ window.AppComponent = {
                        <p v-if="bm.note" class="bm-note">{{ bm.note }}</p>
                        <div class="item-actions">
                          <button class="item-action" title="Edit" @click="openEdit(bm)">✎</button>
-                         <button class="item-action item-action--danger" title="Delete" @click="deleteBookmark(bm)">✕</button>
                        </div>
                      </li>
                    </ul>
@@ -360,6 +359,7 @@ window.AppComponent = {
                  </label>
                </div>
                <div class="modal-actions">
+                 <button v-if="!isNew" class="modal-btn modal-btn--danger" @click="deleteEditingBookmark">Delete</button>
                  <button class="modal-btn modal-btn--muted" @click="closeEditor">Cancel</button>
                  <button class="modal-btn modal-btn--primary" @click="saveEdit">Save</button>
                </div>
