@@ -75,8 +75,10 @@ space-separated parts, OR across fields.
    re-loadable from the "Download bookmarks.js" button).
 - `src/style.css` — all CSS: design tokens, light (`:root`) + dark
    (`[data-theme="dark"]`) themes, responsive `--columns` queries. No `@import`.
-- `src/bookmark-utils.js` — `window.BookmarkUtils` (normalization, favicon,
-      `serializeBookmarks`).
+- `src/bookmark-utils.js` - `window.BookmarkUtils`: the one owner of the
+   bookmark shape via `toBookmark` (and the `toList` field-to-array primitive it
+   builds on). `normalizeBookmarks` (load) and `serializeBookmarks` (save) both
+   route through it, plus `faviconUrl`.
 - `src/catalog.js` — `window.Catalog`, the query pipeline (filter · group · sort ·
    count). Pure: `index(list, query) → { groups, total }`. No DOM, no Vue.
 - `src/toast-utils.js` — `window.ToastUtils` (toast notifications).
@@ -118,11 +120,13 @@ No `npm install`, `npm run build`, or lint/test scripts exist.
 - **Order is the dependency graph.** Anything you add that depends on a
   global must appear *after* it in the script order of `bookmarks.html`; a new
   module becomes a new `src/file.js` added after the one it depends on.
-- **Data contract** — a bookmark is `{ label, url, tags, keywords, note? }`.
-  `tags` and `keywords` may be a string or array and `note` is an optional
-  string (defaults to `''`); `BookmarkUtils.normalizeBookmarks` coerces string
-  → array and fills `note` at load. New entries in the `const bookmarks` array
-  should match.
+- **Data contract** - a bookmark is `{ label, url, tags, keywords, note }`, and its
+   shape is owned *once* by `BookmarkUtils.toBookmark`: a single coercer that turns
+   any raw record into that canonical object, built on the `toList` (field to array)
+   primitive. Load (`normalizeBookmarks`), save (`serializeBookmarks`), and the
+   component's form all route through it, so the shape can't drift between load and
+   save. `tags`/`keywords` may arrive as a string or array; `note` defaults to `''`.
+   New entries in the `const bookmarks` array should match.
 - **URL `%s` placeholder** — a `url` containing `%s` is a search template;
   `SideEffects.navigate` prompts for the term and `encodeURIComponent`s it before
   `window.location.href`.

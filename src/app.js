@@ -59,7 +59,7 @@ window.AppComponent = {
      },
 
     editingTags() {
-      return this.toList(this.editing.tags);
+      return window.BookmarkUtils.toList(this.editing.tags);
     },
 
     tagSuggestions() {
@@ -140,13 +140,13 @@ window.AppComponent = {
         window.ToastUtils.toast('Label and URL are required');
         return;
       }
-      const bm = {
+      const bm = window.BookmarkUtils.toBookmark({
         label,
         url,
-        tags: this.toList(e.tags),
-        keywords: this.toList(e.keywords),
+        tags: window.BookmarkUtils.toList(e.tags),
+        keywords: window.BookmarkUtils.toList(e.keywords),
         note: e.note.trim()
-      };
+      });
       if (this.isNew) this.bookmarks.push(bm);
       else this.bookmarks.splice(this.editingIndex, 1, bm);
       this.showEditor = false;
@@ -180,10 +180,6 @@ window.AppComponent = {
       this.bookmarks = window.BookmarkUtils.cloneBookmarks(this.originalBookmarks);
       window.SideEffects.saveBookmarks(this.bookmarks);
       window.ToastUtils.toast('Reset to original');
-    },
-
-    toList(value) {
-      return String(value || '').split(',').map(s => s.trim()).filter(Boolean);
     },
 
     // --- tag picker methods ---
