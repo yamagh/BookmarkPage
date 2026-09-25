@@ -37,17 +37,14 @@ window.Catalog = {
   _groupByTag(list) {
     const grouped = {};
     for (const bm of list) {
-      // Collect all path prefixes per bookmark (dedupe via Set)
-      const paths = new Set();
+      // Group each bookmark under its full tag path only. Nested tags such
+      // as "Foo / Bar / Baz" no longer fan out to parent prefixes ("Foo",
+      // "Foo / Bar"); a bookmark appears under its full path and nowhere else.
+      const seen = new Set();
       for (const tag of bm.tags || []) {
-        let prefix = '';
-        for (const part of tag.split('/')) {
-          if (!part) continue;
-          prefix = prefix ? prefix + '/' + part : part;
-          paths.add(prefix);
-        }
-      }
-      for (const p of paths) {
+        const p = tag.trim();
+        if (!p || seen.has(p)) continue;
+        seen.add(p);
         if (!grouped[p]) grouped[p] = [];
         grouped[p].push(bm);
       }
