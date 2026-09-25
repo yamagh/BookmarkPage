@@ -48,25 +48,31 @@ window.Catalog = {
         if (!grouped[p]) grouped[p] = [];
         grouped[p].push(bm);
       }
+      // Bookmarks with no tags fall into an "Untagged" group so they still appear.
+      if (!seen.size) {
+        const key = 'Untagged';
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(bm);
+      }
     }
     return grouped;
-   },
-
-   _sortGroups(grouped) {
-      return Object.keys(grouped)
-        .sort((a, b) => a.localeCompare(b))
-        .map(tag => {
-          const parts = tag.split('/');
-          const hasPath = parts.length > 1;
-          return {
-            tag,
-            items: grouped[tag],
-            count: grouped[tag].length,
-            hasPath,
-            root: hasPath ? parts.slice(0, -1).join('/') : null,
-            leaf: hasPath ? parts[parts.length - 1] : tag
-          };
-        });
-    },
+  },
+   
+  _sortGroups(grouped) {
+    return Object.keys(grouped)
+      .sort((a, b) => a.localeCompare(b))
+      .map(tag => {
+        const parts = tag.split('/');
+        const hasPath = parts.length > 1;
+        return {
+          tag,
+          items: grouped[tag],
+          count: grouped[tag].length,
+          hasPath,
+          root: hasPath ? parts.slice(0, -1).join('/') : null,
+          leaf: hasPath ? parts[parts.length - 1] : tag
+        };
+      });
+  }
 
 }
