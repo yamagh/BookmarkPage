@@ -278,7 +278,7 @@ window.AppComponent = {
                     :class="{ 'is-active': activeTag === entry.tag, 'has-children': entry.hasChildren }"
                     :style="{ paddingLeft: (entry.depth > 0 ? entry.depth * 14 : 0) + 'px' }"
                     @click="entry.hasChildren ? toggleExpand(entry.tag) : scrollToTag(entry.tag)">
-                   <span v-if="entry.hasChildren" class="tag-index-chev">{{ entry.expanded ? '▾' : '▸' }}</span>
+                    <span class="tag-index-chev" v-text="entry.hasChildren ? (entry.expanded ? '▾' : '▸') : ''"></span>
                     <span class="tag-index-name">{{ entry.display }}</span>
                    <span class="tag-index-count">{{ entry.count }}</span>
                    <button class="tag-index-rename" title="Rename tag" @click.stop="openRename(entry.tag)">✎</button>
