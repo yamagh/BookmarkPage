@@ -316,11 +316,6 @@ window.AppComponent = {
              </div>
             </header>
 
-            <div class="results-line" v-if="!!query">
-              <span class="results-count">{{ catalog.total }}</span>
-              <span class="results-label">result{{ catalog.total !== 1 ? 's' : '' }} for "{{ query }}"</span>
-            </div>
-
             <div class="empty-state" v-if="!query && catalog.total === 0">
               <div class="empty-icon">◇</div>
               <p class="empty-title">No bookmarks yet</p>

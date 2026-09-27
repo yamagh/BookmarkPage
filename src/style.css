@@ -456,34 +456,6 @@ body::after {
 }
 
 /* ============================================
-   RESULT COUNTER — large serif numeral
-     ============================================ */
-.results-line {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-s);
-  margin-bottom: var(--space-l);
-}
-
-.results-count {
-  font-family: "Fraunces", Georgia, serif;
-  font-weight: 400;
-  font-size: 48px;
-  line-height: 1;
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -.02em;
-  transition: color var(--transition);
-}
-
-.results-label {
-  font-family: "Instrument Sans", sans-serif;
-  font-size: 13px;
-  color: var(--text-tertiary);
-  transition: color var(--transition);
-}
-
-/* ============================================
    EMPTY STATES — ornaments + serif heading
      ============================================ */
 .empty-state {
@@ -540,6 +512,7 @@ li.tag {
   margin-bottom: var(--space-xs);
   border-top: 1px solid var(--accent);
   transition: border-color var(--transition);
+  padding-top: var(--space-s);
 }
 /* second hairline of the double rule */
 .tag-head::after {
