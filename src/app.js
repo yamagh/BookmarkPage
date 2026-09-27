@@ -329,7 +329,6 @@ window.AppComponent = {
             <header class="search-bar">
                  <div class="search-bar-top">
                    <span class="query-label">Search</span>
-                    <button class="manage-btn" @click="addBookmark" title="New bookmark (press n)">+ New</button>
                  </div>
               <div class="action-query">
                 <div class="icon-search">⌕</div>
