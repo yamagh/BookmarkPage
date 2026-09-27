@@ -25,7 +25,9 @@ window.AppComponent = {
       // rename tag modal state
       showRename: false,
       renamingTag: '',
-      newTag: ''
+      newTag: '',
+      focusIndex: -1,
+      showHelp: false
     };
   },
 
@@ -67,10 +69,40 @@ window.AppComponent = {
         this.allTags,
         this.editingTags,
         this.tagInput.trim().toLowerCase()
-      );
-     }
+       );
+      },
+      flatItems() {
+        const result = [];
+        for (const group of this.catalog.groups) {
+          for (const bm of group.items) result.push(bm);
+            }
+        return result;
+      },
+
+      flatGroups() {
+        let offset = 0;
+        return this.catalog.groups.map(g => {
+          const entry = { ...g, flatStart: offset };
+          offset += g.items.length;
+          return entry;
+            });
+      }
   },
 
+
+  watch: {
+    query() {
+      this.focusIndex = -1;
+      },
+     focusIndex(val) {
+      this.$nextTick(() => {
+        const items = document.querySelectorAll('.item');
+        if (val >= 0 && items[val]) {
+          items[val].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+             }
+           });
+         }
+       },
 
   methods: {
     toggleTheme() {
@@ -160,21 +192,81 @@ window.AppComponent = {
       this.openEdit(null);
     },
 
-    // Keyboard shortcut: press `n` to open the new-bookmark modal even when
-    // scrolled away from the top button. It never hijacks typing — it is
-    // ignored while a modal is open or while focus sits in any text field, so
-    // the search box and the editor fields keep working normally.
+     // Global keydown router — single entry point for all keyboard shortcuts.
+     // Escape has highest priority (closes any open overlay). All other shortcuts
+     // are inert while a modal (editor / rename) or the help overlay is open,
+     // and inert when the user is actively typing in a text field.
     onKeydown(e) {
-      if (e.key !== 'n' && e.key !== 'N') return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (this.showEditor || this.showRename) return;
-      const target = e.target;
-      if (!target) return;
-      const tag = target.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return;
-      e.preventDefault();
-      this.addBookmark();
-     },
+       // Escape: close whichever overlay is on screen (help > editor > rename)
+      if (e.key === 'Escape') {
+        this.closeAllModals();
+        return;
+         }
+
+        // Editor / rename modal open — suppress all other global shortcuts
+      if (window.Keyboard.isModalOpen(this)) return;
+
+        // Help overlay open — only ? can toggle it; all other keys ignored
+      if (this.showHelp) {
+        if (e.key === '?') { e.preventDefault(); this.toggleHelp(); }
+        return;
+         }
+
+      const typing = window.Keyboard.isTyping(e.target);
+      const hasMod = e.ctrlKey || e.metaKey;
+
+        // Modifier combos — inert while the user is inside a text field
+      if (hasMod) {
+        if (typing) return;
+        switch (e.key.toLowerCase()) {
+          case 'e':
+            e.preventDefault();
+            this.editFocusedCard();
+            break;
+          case 'backspace':
+            e.preventDefault();
+            this.deleteFocusedCard();
+            break;
+            }
+        return;
+         }
+
+        // Alt combos: leave to the browser (menu / search navigation)
+      if (e.altKey) return;
+
+        // Single-letter / arrow-key shortcuts
+      switch (e.key) {
+        case '/':
+          if (!typing) { e.preventDefault(); this.focusQueryInput(); }
+          break;
+        case 'n':
+        case 'N':
+          if (!typing) { e.preventDefault(); this.addBookmark(); }
+          break;
+        case 't':
+        case 'T':
+          if (!typing) { e.preventDefault(); this.toggleTheme(); }
+          break;
+        case '?':
+          if (!typing) { e.preventDefault(); this.toggleHelp(); }
+          break;
+        case 'j':
+        case 'J':
+        case 'ArrowDown':
+          if (!typing) { e.preventDefault(); this.focusNextCard(); }
+          break;
+        case 'k':
+        case 'K':
+        case 'ArrowUp':
+          if (!typing) { e.preventDefault(); this.focusPrevCard(); }
+          break;
+        case 'Enter':
+           // Fires when no text field has focus; in-field Enter is handled by
+           // @keydown.enter on the search input (onSearchEnter).
+          if (!typing) { e.preventDefault(); this.openFocusedCard(); }
+          break;
+         }
+},
 
     deleteEditingBookmark() {
       if (this.isNew) return;
@@ -263,7 +355,61 @@ window.AppComponent = {
       this.showRename = false;
       window.SideEffects.saveBookmarks(this.bookmarks);
       window.ToastUtils.toast(`Renamed "${oldTag}" → "${newTag}" (${count})`);
-    }
+     },
+
+      // Delegate — same fallback logic as the global key handler's Enter case.
+    onSearchEnter() {
+      this.openFocusedCard();
+    },
+
+     // --- card cursor navigation ---
+
+    focusNextCard() {
+      const n = this.flatItems.length;
+      if (!n) return;
+      this.focusIndex = Math.min(this.focusIndex + 1, n - 1);
+     },
+
+    focusPrevCard() {
+      this.focusIndex = Math.max(this.focusIndex - 1, 0);
+     },
+
+    // Fall back to the first result when no card is focused yet.
+    openFocusedCard() {
+      const bm = this.focusIndex >= 0
+        ? this.flatItems[this.focusIndex]
+        : this.catalog.groups[0]?.items?.[0];
+      if (bm) this.navigate(bm);
+    },
+
+    editFocusedCard() {
+      const bm = this.flatItems[this.focusIndex];
+      if (bm) this.openEdit(bm);
+     },
+
+    deleteFocusedCard() {
+      const fi = this.focusIndex;
+      const bm = this.flatItems[fi];
+      if (!bm) return;
+      if (!confirm(`Delete "${bm.label}"?`)) return;
+      this.bookmarks.splice(this.bookmarks.indexOf(bm), 1);
+      this.focusIndex = fi < this.flatItems.length ? fi : -1;
+      window.SideEffects.saveBookmarks(this.bookmarks);
+      window.ToastUtils.toast('Bookmark deleted');
+    },
+
+     // --- overlay helpers ---
+
+    toggleHelp() {
+      this.showHelp = !this.showHelp;
+     },
+
+     // Close the topmost open overlay: help > editor > rename.
+    closeAllModals() {
+      if (this.showHelp)   { this.showHelp   = false; return; }
+      if (this.showEditor) { this.showEditor = false; return; }
+      if (this.showRename) { this.showRename = false; }
+     }
 
   },
 
@@ -318,6 +464,7 @@ window.AppComponent = {
               <div class="rail-actions">
                 <button class="manage-btn" @click="downloadBookmarks">↓ bookmarks.js</button>
                 <button class="manage-btn manage-btn--muted" @click="resetBookmarks">Reset</button>
+                  <button class="manage-btn manage-btn--muted" @click="toggleHelp" title="Keyboard shortcuts (?)" aria-label="Show keyboard shortcuts">? Keys</button>
               </div>
 
             <button class="theme-toggle" :title="'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' mode'" @click="toggleTheme">
@@ -332,7 +479,7 @@ window.AppComponent = {
                  </div>
               <div class="action-query">
                 <div class="icon-search">⌕</div>
-                <input ref="query" v-model="query" @keydown.enter="goToFirstBookmark"
+                <input ref="query" v-model="query" @keydown.enter="onSearchEnter"
                 class="query" placeholder="Search bookmarks…" autocomplete="off" />
              </div>
             </header>
@@ -351,7 +498,7 @@ window.AppComponent = {
 
             <div class="tag-groups" v-else>
               <ul>
-                  <li v-for="(group, i) in catalog.groups" :key="group.tag"
+                  <li v-for="(group, i) in flatGroups" :key="group.tag"
                 class="tag" :id="'group-' + i">
                  <div class="tag-content">
                    <div class="tag-head">
@@ -367,7 +514,8 @@ window.AppComponent = {
                      <span class="tag-count">{{ group.count }}</span>
                    </div>
                    <ul>
-                     <li v-for="bm in group.items" :key="bm.url" class="item">
+                     <li v-for="(bm, ii) in group.items" :key="bm.url" class="item"
+                           :class="{ 'is-focused': focusIndex >= 0 && focusIndex === group.flatStart + ii }">
                         <a :href="bm.url" @click.prevent="navigate(bm)" class="item-link">
                           <img v-if="faviconUrl(bm.url)" class="bm-favicon" :src="faviconUrl(bm.url)" alt="" loading="lazy" />
                           <span class="item-label">{{ bm.label }}</span>
@@ -436,7 +584,7 @@ window.AppComponent = {
                   </label>
                 </div>
                 <div class="modal-actions">
-                  <button v-if="!isNew" class="modal-btn modal-btn--danger" @click="deleteEditingBookmark">Delete</button>
+                   <button v-if="!isNew" class="modal-btn modal-btn--danger" @click="deleteEditingBookmark">Delete</button>
                   <button class="modal-btn modal-btn--muted" @click="closeEditor">Cancel</button>
                   <button class="modal-btn modal-btn--primary" @click="saveEdit">Save</button>
                 </div>
@@ -466,6 +614,60 @@ window.AppComponent = {
                 </div>
               </div>
             </div>
+               <!-- Keyboard shortcuts overlay -->
+               <div class="modal-overlay" v-if="showHelp" @click.self="showHelp = false">
+                 <div class="modal" role="dialog" aria-modal="true" @click.stop>
+                   <h2 class="modal-title">Keyboard shortcuts</h2>
+                   <div class="modal-body">
+                     <dl class="shortcut-list">
+                       <div class="shortcut-row">
+                         <span class="shortcut-keys"><kbd>/</kbd></span>
+                         <span class="shortcut-desc">Focus search</span>
+                       </div>
+                       <div class="shortcut-row">
+                         <span class="shortcut-keys"><kbd>j</kbd> · <kbd>↓</kbd></span>
+                         <span class="shortcut-desc">Next result</span>
+                       </div>
+                       <div class="shortcut-row">
+                         <span class="shortcut-keys"><kbd>k</kbd> · <kbd>↑</kbd></span>
+                         <span class="shortcut-desc">Previous result</span>
+                       </div>
+                       <div class="shortcut-row">
+                         <span class="shortcut-keys"><kbd>Enter</kbd></span>
+                         <span class="shortcut-desc">Open focused</span>
+                       </div>
+                       <div class="shortcut-row">
+                         <span class="shortcut-keys"><kbd>n</kbd></span>
+                         <span class="shortcut-desc">New bookmark</span>
+                       </div>
+                       <div class="shortcut-row">
+                         <span class="shortcut-keys"><kbd>t</kbd></span>
+                         <span class="shortcut-desc">Toggle dark / light</span>
+                       </div>
+                       <div class="shortcut-row">
+                         <span class="shortcut-keys"><kbd>⌘</kbd> / <kbd>Ctrl</kbd> + <kbd>e</kbd></span>
+                         <span class="shortcut-desc">Edit focused</span>
+                       </div>
+                       <div class="shortcut-row">
+                         <span class="shortcut-keys"><kbd>⌘</kbd> / <kbd>Ctrl</kbd> + <kbd>⌫</kbd></span>
+                         <span class="shortcut-desc">Delete focused</span>
+                       </div>
+                       <div class="shortcut-row">
+                         <span class="shortcut-keys"><kbd>Esc</kbd></span>
+                         <span class="shortcut-desc">Close any dialog</span>
+                       </div>
+                       <div class="shortcut-row">
+                         <span class="shortcut-keys"><kbd>?</kbd></span>
+                         <span class="shortcut-desc">Show this panel</span>
+                       </div>
+                     </dl>
+                     <p class="rename-hint">Press <kbd>?</kbd> at any time to open this panel.</p>
+                   </div>
+                   <div class="modal-actions">
+                     <button class="modal-btn modal-btn--muted" @click="showHelp = false">Close</button>
+                   </div>
+                 </div>
+               </div>
 
           </main>
 

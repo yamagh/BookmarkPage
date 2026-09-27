@@ -1196,3 +1196,76 @@ li.item:hover .item-actions {
     transition: none;
    }
 }
+
+/* Keyboard focus ring on result cards — highlighted via :class binding */
+li.item.is-focused {
+  background: var(--accent-soft);
+  border-radius: 0 4px 4px 0;
+}
+
+li.item.is-focused a {
+  color: var(--text-primary);
+}
+
+li.item.is-focused a::before {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Keyboard shortcut help overlay ------------------------------------------------ */
+kbd {
+  display: inline-block;
+  font-family: "Instrument Sans", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--text-secondary);
+  background: var(--accent-soft);
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  padding: 2px 7px;
+  min-width: 22px;
+  text-align: center;
+  box-sizing: border-box;
+  vertical-align: middle;
+  transition: background-color var(--transition), color var(--transition), border-color var(--transition);
+}
+
+[data-theme="dark"] kbd {
+  background: rgba(217, 178, 106, .12);
+}
+
+.shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-m);
+  padding: var(--space-s) 0;
+  border-bottom: 1px solid var(--hairline);
+  transition: border-color var(--transition);
+}
+
+.shortcut-row:last-child {
+  border-bottom: none;
+}
+
+.shortcut-keys {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.shortcut-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: right;
+  transition: color var(--transition);
+}
