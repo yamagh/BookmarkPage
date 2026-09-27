@@ -160,6 +160,22 @@ window.AppComponent = {
       this.openEdit(null);
     },
 
+    // Keyboard shortcut: press `n` to open the new-bookmark modal even when
+    // scrolled away from the top button. It never hijacks typing — it is
+    // ignored while a modal is open or while focus sits in any text field, so
+    // the search box and the editor fields keep working normally.
+    onKeydown(e) {
+      if (e.key !== 'n' && e.key !== 'N') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (this.showEditor || this.showRename) return;
+      const target = e.target;
+      if (!target) return;
+      const tag = target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return;
+      e.preventDefault();
+      this.addBookmark();
+     },
+
     deleteEditingBookmark() {
       if (this.isNew) return;
       if (!confirm(`Delete "${this.editing.label}"?`)) return;
@@ -253,7 +269,13 @@ window.AppComponent = {
 
   mounted() {
     this.focusQueryInput();
-  },
+    this._keyHandler = (e) => this.onKeydown(e);
+    window.addEventListener('keydown', this._keyHandler);
+    },
+
+  beforeUnmount() {
+    window.removeEventListener('keydown', this._keyHandler);
+     },
 
   template: `
         <div class="app-root">
@@ -307,7 +329,7 @@ window.AppComponent = {
             <header class="search-bar">
                  <div class="search-bar-top">
                    <span class="query-label">Search</span>
-                   <button class="manage-btn" @click="addBookmark">+ New</button>
+                    <button class="manage-btn" @click="addBookmark" title="New bookmark (press n)">+ New</button>
                  </div>
               <div class="action-query">
                 <div class="icon-search">⌕</div>
@@ -447,6 +469,11 @@ window.AppComponent = {
             </div>
 
           </main>
+
+           <button class="fab" type="button" @click="addBookmark"
+             title="New bookmark (press n)" aria-label="New bookmark">
+             +
+           </button>
         </div>
     `
 };
