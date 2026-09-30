@@ -27,13 +27,20 @@ window.AppComponent = {
       renamingTag: '',
       newTag: '',
       focusIndex: -1,
-      showHelp: false
+      showHelp: false,
+      // tag-order state
+      meta: window.SideEffects.loadMeta(),
+      draggingTag: null,
+      dragOverTag: null,
+      // code view state
+      showCodeView: false,
+      codeViewText: ''
     };
   },
 
   computed: {
     catalog() {
-      return window.Catalog.index(this.bookmarks, this.query);
+      return window.Catalog.index(this.bookmarks, this.query, this.meta ? this.meta.tagOrder : undefined);
     },
 
     treeFlat() {
@@ -132,9 +139,39 @@ window.AppComponent = {
       this.activeTag = tag;
     },
 
-    toggleExpand(tag) {
-      this.expandedTags[tag] = !this.expandedTags[tag];
-    },
+      toggleExpand(tag) {
+        this.expandedTags[tag] = !this.expandedTags[tag];
+        },
+
+        // --- tag order: drag-and-drop reorder of top-level tags ---
+        onTagDragStart(entry) {
+          if (entry.depth !== 0) return;
+          this.draggingTag = entry.tag;
+          },
+        onTagDragOver(target) {
+          if (target.depth !== 0 || !this.draggingTag) return;
+          this.dragOverTag = target.tag;
+          },
+        onTagDrop(target) {
+          this.dragOverTag = null;
+          const from = this.draggingTag;
+          this.draggingTag = null;
+          if (target.depth !== 0 || !from || from === target.tag) return;
+          const topOrder = this.catalog.tree.map(n => n.tag);
+          const fromIdx = topOrder.indexOf(from);
+          const toIdx = topOrder.indexOf(target.tag);
+          if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
+          topOrder.splice(fromIdx, 1);
+          const insertIdx = fromIdx < toIdx ? toIdx - 1 : toIdx;
+          topOrder.splice(insertIdx, 0, from);
+          this.meta.tagOrder = topOrder;
+          window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
+          window.ToastUtils.toast('Tag order updated');
+          },
+        onTagDragEnd() {
+          this.draggingTag = null;
+          this.dragOverTag = null;
+          },
 
     copyBookmarksToClipboard() {
       window.SideEffects.copyToClipboard(this.bookmarks);
@@ -158,6 +195,9 @@ window.AppComponent = {
       } : { label: '', url: '', tags: '', keywords: '', note: '' };
       this.tagInput = '';
       this.showEditor = true;
+      this.$nextTick(() => {
+        if (this.$refs.urlInput) this.$refs.urlInput.focus();
+      });
     },
 
     closeEditor() {
@@ -168,8 +208,8 @@ window.AppComponent = {
       const e = this.editing;
       const label = e.label.trim();
       const url = e.url.trim();
-      if (!label || !url) {
-        window.ToastUtils.toast('Label and URL are required');
+      if (!url) {
+        window.ToastUtils.toast('URL is required');
         return;
       }
       const bm = window.BookmarkUtils.toBookmark({
@@ -184,7 +224,7 @@ window.AppComponent = {
       this.showEditor = false;
       this.tagInput = '';
       this.tagPickerOpen = false;
-      window.SideEffects.saveBookmarks(this.bookmarks);
+      window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
       window.ToastUtils.toast(this.isNew ? 'Bookmark added' : 'Bookmark saved');
     },
 
@@ -266,27 +306,50 @@ window.AppComponent = {
           if (!typing) { e.preventDefault(); this.openFocusedCard(); }
           break;
          }
-},
+    },
 
     deleteEditingBookmark() {
       if (this.isNew) return;
-      if (!confirm(`Delete "${this.editing.label}"?`)) return;
+      const name = this.editing.label || this.editing.url;
+      if (!confirm(`Delete "${name}"?`)) return;
       this.bookmarks.splice(this.editingIndex, 1);
       this.showEditor = false;
-      window.SideEffects.saveBookmarks(this.bookmarks);
+      window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
       window.ToastUtils.toast('Bookmark deleted');
-    },
+     },
 
+    // Export the current list to a re-loadable bookmarks.js data file.
     downloadBookmarks() {
-      // Export the current list to a re-loadable bookmarks.js data file.
-      const content = window.BookmarkUtils.serializeBookmarks(this.bookmarks);
+      const content = window.BookmarkUtils.serializeBookmarks(this.bookmarks, this.meta);
       window.SideEffects.downloadFile('bookmarks.js', content, 'text/javascript');
-    },
+     },
+
+    // --- code view ---
+    openCodeView() {
+      this.codeViewText = window.BookmarkUtils.serializeBookmarks(this.bookmarks, this.meta);
+      this.showCodeView = true;
+     },
+    closeCodeView() {
+      this.showCodeView = false;
+     },
+    copyCodeView() {
+      navigator.clipboard?.writeText(this.codeViewText)
+         .then(() => window.ToastUtils.toast('Copied'))
+         .catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = this.codeViewText;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          window.ToastUtils.toast('Copied');
+         });
+     },
 
     resetBookmarks() {
       if (!confirm('Reset to the original bookmarks? Your saved edits will be cleared.')) return;
       this.bookmarks = window.BookmarkUtils.cloneBookmarks(this.originalBookmarks);
-      window.SideEffects.saveBookmarks(this.bookmarks);
+      window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
       window.ToastUtils.toast('Reset to original');
     },
 
@@ -353,7 +416,7 @@ window.AppComponent = {
       }
       if (this.activeTag === oldTag) this.activeTag = newTag;
       this.showRename = false;
-      window.SideEffects.saveBookmarks(this.bookmarks);
+      window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
       window.ToastUtils.toast(`Renamed "${oldTag}" → "${newTag}" (${count})`);
      },
 
@@ -391,10 +454,10 @@ window.AppComponent = {
       const fi = this.focusIndex;
       const bm = this.flatItems[fi];
       if (!bm) return;
-      if (!confirm(`Delete "${bm.label}"?`)) return;
+      if (!confirm(`Delete "${bm.label || bm.url}"?`)) return;
       this.bookmarks.splice(this.bookmarks.indexOf(bm), 1);
       this.focusIndex = fi < this.flatItems.length ? fi : -1;
-      window.SideEffects.saveBookmarks(this.bookmarks);
+      window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
       window.ToastUtils.toast('Bookmark deleted');
     },
 
@@ -406,8 +469,9 @@ window.AppComponent = {
 
      // Close the topmost open overlay: help > editor > rename.
     closeAllModals() {
-      if (this.showHelp)   { this.showHelp   = false; return; }
+      if (this.showHelp)     { this.showHelp      = false; return; }
       if (this.showEditor) { this.showEditor = false; return; }
+      if (this.showCodeView) { this.showCodeView = false; return; }
       if (this.showRename) { this.showRename = false; }
      }
 
@@ -441,17 +505,22 @@ window.AppComponent = {
              <nav class="tag-index">
                <p class="tag-index-title">Index</p>
                <ul class="tag-index-list">
-                 <li v-for="(entry, i) in treeFlat" :key="entry.tag"
+                  <li v-for="(entry, i) in treeFlat" :key="entry.tag"
                     class="tag-index-item"
-                    :class="{ 'is-active': activeTag === entry.tag, 'has-children': entry.hasChildren }"
+                    :class="{ 'is-active': activeTag === entry.tag, 'has-children': entry.hasChildren, 'drag-over': dragOverTag === entry.tag, 'dragging': draggingTag === entry.tag }"
                     :style="{ paddingLeft: (entry.depth > 0 ? entry.depth * 14 : 0) + 'px' }"
+                    :draggable="entry.depth === 0"
+                    @dragstart="onTagDragStart(entry)"
+                    @dragover.prevent="onTagDragOver(entry)"
+                    @drop.prevent="onTagDrop(entry)"
+                    @dragend="onTagDragEnd()"
+                    :title="entry.depth === 0 ? 'Drag to reorder' : ''"
                     @click="entry.hasChildren ? toggleExpand(entry.tag) : scrollToTag(entry.tag)">
-                    <span class="tag-index-chev" v-text="entry.hasChildren ? (entry.expanded ? '▾' : '▸') : ''"></span>
-                    <span class="tag-index-name">{{ entry.display }}</span>
-                   <span class="tag-index-count">{{ entry.count }}</span>
-                   <button class="tag-index-rename" title="Rename tag" @click.stop="openRename(entry.tag)">✎</button>
-
-                 </li>
+                     <span class="tag-index-chev" v-text="entry.hasChildren ? (entry.expanded ? '▾' : '▸') : ''"></span>
+                     <span class="tag-index-name">{{ entry.display }}</span>
+                     <span class="tag-index-count">{{ entry.count }}</span>
+                     <button class="tag-index-rename" title="Rename tag" @click.stop="openRename(entry.tag)">✎</button>
+                  </li>
                </ul>
              </nav>
 
@@ -465,6 +534,7 @@ window.AppComponent = {
                 <button class="manage-btn" @click="downloadBookmarks">↓ bookmarks.js</button>
                 <button class="manage-btn manage-btn--muted" @click="resetBookmarks">Reset</button>
                   <button class="manage-btn manage-btn--muted" @click="toggleHelp" title="Keyboard shortcuts (?)" aria-label="Show keyboard shortcuts">? Keys</button>
+                 <button class="manage-btn manage-btn--muted" @click="openCodeView">⧉ View</button>
               </div>
 
             <button class="theme-toggle" :title="'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' mode'" @click="toggleTheme">
@@ -518,7 +588,7 @@ window.AppComponent = {
                            :class="{ 'is-focused': focusIndex >= 0 && focusIndex === group.flatStart + ii }">
                         <a :href="bm.url" @click.prevent="navigate(bm)" class="item-link">
                           <img v-if="faviconUrl(bm.url)" class="bm-favicon" :src="faviconUrl(bm.url)" alt="" loading="lazy" />
-                          <span class="item-label">{{ bm.label }}</span>
+                           <span class="item-label">{{ bm.label || bm.url }}</span>
                         </a>
                         <p v-if="bm.note" class="bm-note">{{ bm.note }}</p>
                         <div class="item-actions">
@@ -542,7 +612,7 @@ window.AppComponent = {
                   </label>
                   <label class="field">
                     <span class="field-label">URL</span>
-                    <input class="field-input" v-model="editing.url" placeholder="https://…       (%s = search term)" autocomplete="off" />
+                     <input ref="urlInput" class="field-input" v-model="editing.url" placeholder="https://…        (%s = search term)" autocomplete="off" />
                   </label>
                   <!-- Tag picker -->
                   <div class="field">
@@ -668,6 +738,21 @@ window.AppComponent = {
                    </div>
                  </div>
                </div>
+
+                <!-- Code view modal -->
+                <div class="modal-overlay" v-if="showCodeView" @click.self="closeCodeView">
+                  <div class="modal modal--code" role="dialog" aria-modal="true" @click.stop>
+                    <h2 class="modal-title">bookmarks.js</h2>
+                    <div class="modal-body">
+                      <pre class="code-view"><code>{{ codeViewText }}</code></pre>
+                    </div>
+                    <div class="modal-actions">
+                      <button class="modal-btn" @click="copyCodeView">Copy</button>
+                      <button class="modal-btn manage-btn--muted" @click="closeCodeView">Close</button>
+                      <button class="modal-btn modal-btn--primary" @click="downloadBookmarks; closeCodeView()">Download</button>
+                    </div>
+                  </div>
+                </div>
 
           </main>
 

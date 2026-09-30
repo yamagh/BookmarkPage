@@ -8,8 +8,8 @@
  *   copyToClipboard(list)     export the list as JSON to the clipboard
  *   downloadFile(name,data,mime)  write content to a downloadable file
  *   getTheme() / setTheme()   read/write the light|dark theme, mirror data-theme
- *   loadBookmarks(src) / saveBookmarks(list)  localStorage 'bookmarks',
- *                       falling back to the file's global `bookmarks` array
+ *   loadBookmarks(src) / saveBookmarks(list, meta)  localStorage 'bookmarks'
+ *                        (and 'meta'), falling back to the file's globals
  */
 window.SideEffects = {
    // URL navigation. A `%s` in the URL means "prompt for a search term first."
@@ -91,11 +91,37 @@ window.SideEffects = {
       window.BookmarkUtils.cloneBookmarks(data)
      );
    },
-  saveBookmarks(list) {
+  saveBookmarks(list, meta) {
     try {
       localStorage.setItem('bookmarks', JSON.stringify(list));
-     } catch (e) {
-       /* ignore storage errors */
-     }
-   }
+    } catch (e) {
+      /* ignore storage errors */
+    }
+    if (meta) {
+      try {
+        localStorage.setItem('meta', JSON.stringify(meta));
+      } catch (e) {
+        /* ignore storage errors */
+      }
+    }
+  },
+
+  // Meta persistence: localStorage 'meta', falling back to the file's global
+  // `meta` (emitted as a const by serializeBookmarks). Always returns
+  // { tagOrder: string[] }.
+  loadMeta() {
+    try {
+      const raw = localStorage.getItem('meta');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          return { tagOrder: Array.isArray(parsed.tagOrder) ? parsed.tagOrder : [] };
+        }
+      }
+    } catch (e) { /* fall back to the file source */ }
+    if (typeof meta !== 'undefined' && meta && Array.isArray(meta.tagOrder)) {
+      return { tagOrder: meta.tagOrder.slice() };
+    }
+    return { tagOrder: [] };
+  }
 };

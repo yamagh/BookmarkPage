@@ -4,9 +4,9 @@
  *   isTyping(target)   → true when the event target is a text input / textarea /
  *                       contentEditable region, so single-letter shortcuts can
  *                       yield to native typing.
- *   isModalOpen(state) → true while a modal overlay (editor or rename) is visible,
- *                       so global letter shortcuts are suppressed.
- *
+ *   isModalOpen(state) → true while a modal overlay (editor, rename, or code
+ *                       view) is visible, so global letter shortcuts are
+ *                       suppressed to avoid accidental modal actions.
  * No DOM mutation, no I/O, no Vue.  Exposed as window.Keyboard.
  */
 window.Keyboard = {
@@ -22,6 +22,6 @@ window.Keyboard = {
     // True while the editor or rename modal is on screen — global letter
     // shortcuts are suppressed in that state to avoid accidental modal actions.
    isModalOpen(state) {
-    return !!(state.showEditor || state.showRename);
+    return !!(state.showEditor || state.showRename || state.showCodeView);
     }
 };

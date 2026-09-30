@@ -15,12 +15,24 @@ window.Tags = {
  * @param {Array<{tag, items, count}>} groups  sorted leaf/full-path groups
  * @returns {Array<{tag, display, items, count, depth, hasChildren, children?}>} root nodes
  */
-  tree(groups) {
+  tree(groups, tagOrder) {
+   // Order nodes by the user's top-level `tagOrder`; unknown tags fall to the
+   // end, ties resolved alphabetically by canonical (trimmed, " / ") path.
+   const order = tagOrder || [];
+   const pos = (tag) => {
+     const i = order.indexOf(tag);
+     return i < 0 ? Infinity : i;
+    };
+    const cmp = (a, b) => {
+      const pa = pos(a.tag), pb = pos(b.tag);
+      if (pa !== pb) return pa - pb;
+      return a.tag.localeCompare(b.tag);
+     };
    const root = [];
-  const map = new Map();            // canonical (trimmed, " / "-joined) path → node
+  const map = new Map();             // canonical (trimmed, " / "-joined) path → node
   const canon = (tag) =>
       tag.split('/').map(s => s.trim()).filter(Boolean).join(' / ');
-     // Find-or-create the node for fullPath, synthesizing any missing ancestors.
+      // Find-or-create the node for fullPath, synthesizing any missing ancestors.
   const ensureNode = (fullPath) => {
      const key = canon(fullPath);
      if (map.has(key)) return map.get(key);
@@ -45,19 +57,19 @@ window.Tags = {
         root.push(node);
         }
      return node;
-     };
-     // Attach each group's items to its node. A flat tag may share its canonical
-    // key with a synthesized parent of a nested tag, so push (do not overwrite).
+      };
+      // Attach each group's items to its node. A flat tag may share its canonical
+      // key with a synthesized parent of a nested tag, so push (do not overwrite).
   for (const g of groups) ensureNode(g.tag).items.push(...g.items);
-     // Recurse top-down: order children, then set counts (subtree or own items).
+      // Recurse top-down: order nodes, then set counts (subtree or own items).
    const collectUrls = (node, urls) => {
       for (const item of node.items) urls.add(item.url);
       if (node.children) for (const c of node.children) collectUrls(c, urls);
-      };
+       };
   const finalize = (list) => {
-     for (const node of list) {
-       if (node.children) {
-        node.children.sort((a, b) => a.tag.localeCompare(b.tag));
+    list.sort(cmp);
+    for (const node of list) {
+      if (node.children) {
         finalize(node.children);
         const urls = new Set();
         collectUrls(node, urls);
@@ -69,7 +81,7 @@ window.Tags = {
      };
   finalize(root);
   return root;
-   },
+    },
 
   /**
    * Collect unique tag names from a normalized bookmark list, sorted.

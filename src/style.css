@@ -253,7 +253,7 @@ body::after {
   justify-content: flex-start;
   gap: var(--space-s);
   padding: 4px 0;
-  cursor: pointer;
+  cursor: grab;
   color: var(--text-secondary);
   font-size: 13px;
   background-image: linear-gradient(var(--accent), var(--accent));
@@ -261,6 +261,15 @@ body::after {
   background-position: 0 100%;
   background-repeat: no-repeat;
   transition: background-size .28s cubic-bezier(.22,1,.36,1), color var(--transition);
+}
+.tag-index-item.has-children {
+  cursor: pointer;
+}
+.tag-index-item.drag-over {
+  background: var(--accent-soft);
+}
+.tag-index-item.dragging {
+  opacity: .4;
 }
 
 .tag-index-item:hover {
@@ -1268,4 +1277,25 @@ kbd {
   color: var(--text-secondary);
   text-align: right;
   transition: color var(--transition);
+}
+
+.modal--code {
+  max-width: 600px;
+}
+
+.code-view {
+  max-height: 60vh;
+  overflow: auto;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  background: var(--bg-surface);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 16px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text-secondary);
+  user-select: text;
+  margin: 0;
 }

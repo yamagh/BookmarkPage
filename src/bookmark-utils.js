@@ -38,8 +38,8 @@ window.BookmarkUtils = {
     return JSON.parse(JSON.stringify(bookmarks));
    },
 
-  serializeBookmarks(bookmarks) {
-    const pad = '   ';
+  serializeBookmarks(bookmarks, meta) {
+    const pad = '    ';
     const items = bookmarks.map(bm => {
       const b = BookmarkUtils.toBookmark(bm);
       const field = (key, val) => `${pad}${pad}"${key}": ${JSON.stringify(val)}`;
@@ -48,12 +48,18 @@ window.BookmarkUtils = {
         field('url', b.url),
         field('tags', b.tags),
         field('keywords', b.keywords)
-        ];
+         ];
       if (b.note) lines.push(field('note', b.note));
       return `${pad}{\n${lines.join(',\n')}\n${pad}}`;
-      });
-    return `const bookmarks = [\n${items.join(',\n')}\n];\n`;
-   },
+       });
+    let out = `const bookmarks = [\n${items.join(',\n')}\n];\n`;
+    // Emit a `const meta` block so a re-downloaded file round-trips the
+    // user's custom tag order; omitted when there is none.
+    if (meta && Array.isArray(meta.tagOrder) && meta.tagOrder.length) {
+      out += `\nconst meta = ${JSON.stringify({ tagOrder: meta.tagOrder }, null, 2)};\n`;
+     }
+    return out;
+    },
 
 
 
