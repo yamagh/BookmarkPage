@@ -13,29 +13,29 @@ window.AppComponent = {
       originalBookmarks: window.BookmarkUtils.normalizeBookmarks(
         window.BookmarkUtils.cloneBookmarks(bookmarks)
         ),
-      // editor modal state
-      showEditor: false,
+       // ---- overlay state: at most one overlay is open at a time.
+       // 'editor' | 'rename' | 'code' | 'help'; null = none.
+       // Per-overlay payloads follow (editing / renamingTag / codeViewText).
+      activeOverlay: null,
+       // editor payload
       isNew: false,
       editingIndex: -1,
       editing: { label: '', url: '', tags: '', keywords: '', note: '' },
       expandedTags: {},
-      // tag picker state
+       // tag picker state
       tagInput: '',
       tagPickerOpen: false,
-      // rename tag modal state
-      showRename: false,
+       // rename payload
       renamingTag: '',
       newTag: '',
       focusIndex: -1,
-      showHelp: false,
-      // tag-order state
+       // tag-order state
       meta: window.SideEffects.loadMeta(),
       draggingTag: null,
       dragOverTag: null,
-      // code view state
-      showCodeView: false,
+       // code-view payload
       codeViewText: ''
-    };
+     };
   },
 
   computed: {
@@ -194,14 +194,14 @@ window.AppComponent = {
         note: bookmark.note || ''
       } : { label: '', url: '', tags: '', keywords: '', note: '' };
       this.tagInput = '';
-      this.showEditor = true;
+      this.activeOverlay = 'editor';
       this.$nextTick(() => {
         if (this.$refs.urlInput) this.$refs.urlInput.focus();
       });
     },
 
     closeEditor() {
-      this.showEditor = false;
+      this.activeOverlay = null;
     },
 
     saveEdit() {
@@ -221,7 +221,7 @@ window.AppComponent = {
       });
       if (this.isNew) this.bookmarks.push(bm);
       else this.bookmarks.splice(this.editingIndex, 1, bm);
-      this.showEditor = false;
+      this.activeOverlay = null;
       this.tagInput = '';
       this.tagPickerOpen = false;
       window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
@@ -244,10 +244,10 @@ window.AppComponent = {
          }
 
         // Editor / rename modal open — suppress all other global shortcuts
-      if (window.Keyboard.isModalOpen(this)) return;
+      if (window.Keyboard.isModalOpen(this.activeOverlay)) return;
 
         // Help overlay open — only ? can toggle it; all other keys ignored
-      if (this.showHelp) {
+      if (this.activeOverlay === 'help') {
         if (e.key === '?') { e.preventDefault(); this.toggleHelp(); }
         return;
          }
@@ -313,7 +313,7 @@ window.AppComponent = {
       const name = this.editing.label || this.editing.url;
       if (!confirm(`Delete "${name}"?`)) return;
       this.bookmarks.splice(this.editingIndex, 1);
-      this.showEditor = false;
+      this.activeOverlay = null;
       window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
       window.ToastUtils.toast('Bookmark deleted');
      },
@@ -327,10 +327,10 @@ window.AppComponent = {
     // --- code view ---
     openCodeView() {
       this.codeViewText = window.BookmarkUtils.serializeBookmarks(this.bookmarks, this.meta);
-      this.showCodeView = true;
+      this.activeOverlay = 'code';
      },
     closeCodeView() {
-      this.showCodeView = false;
+      this.activeOverlay = null;
      },
     copyCodeView() {
       navigator.clipboard?.writeText(this.codeViewText)
@@ -394,11 +394,11 @@ window.AppComponent = {
     openRename(tag) {
       this.renamingTag = tag;
       this.newTag = '';
-      this.showRename = true;
+      this.activeOverlay = 'rename';
     },
 
     closeRename() {
-      this.showRename = false;
+      this.activeOverlay = null;
     },
 
     doRename() {
@@ -411,11 +411,11 @@ window.AppComponent = {
       const count = window.Tags.rename(this.bookmarks, oldTag, newTag);
       if (count === 0) {
         window.ToastUtils.toast(`No bookmarks found with tag "${oldTag}"`);
-        this.showRename = false;
+        this.activeOverlay = null;
         return;
       }
       if (this.activeTag === oldTag) this.activeTag = newTag;
-      this.showRename = false;
+      this.activeOverlay = null;
       window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
       window.ToastUtils.toast(`Renamed "${oldTag}" → "${newTag}" (${count})`);
      },
@@ -464,16 +464,14 @@ window.AppComponent = {
      // --- overlay helpers ---
 
     toggleHelp() {
-      this.showHelp = !this.showHelp;
+      this.activeOverlay = this.activeOverlay === 'help' ? null : 'help';
      },
 
-     // Close the topmost open overlay: help > editor > rename.
+      // Close whatever overlay is open — only one is ever open, so this is
+      // just a reset (previously a priority stack over four independent flags).
     closeAllModals() {
-      if (this.showHelp)     { this.showHelp      = false; return; }
-      if (this.showEditor) { this.showEditor = false; return; }
-      if (this.showCodeView) { this.showCodeView = false; return; }
-      if (this.showRename) { this.showRename = false; }
-     }
+      this.activeOverlay = null;
+      }
 
   },
 
@@ -602,7 +600,7 @@ window.AppComponent = {
             </div>
 
             <!-- Editor modal -->
-            <div class="modal-overlay" v-if="showEditor" @click.self="closeEditor">
+             <div class="modal-overlay" v-if="activeOverlay === 'editor'" @click.self="closeEditor">
               <div class="modal" role="dialog" aria-modal="true" @click.stop>
                 <h2 class="modal-title">{{ isNew ? 'New bookmark' : 'Edit bookmark' }}</h2>
                 <div class="modal-body">
@@ -662,7 +660,7 @@ window.AppComponent = {
             </div>
 
             <!-- Rename tag modal -->
-            <div class="modal-overlay" v-if="showRename" @click.self="closeRename">
+             <div class="modal-overlay" v-if="activeOverlay === 'rename'" @click.self="closeRename">
               <div class="modal" role="dialog" aria-modal="true" @click.stop>
                 <h2 class="modal-title">Rename tag</h2>
                 <div class="modal-body">
@@ -685,7 +683,7 @@ window.AppComponent = {
               </div>
             </div>
                <!-- Keyboard shortcuts overlay -->
-               <div class="modal-overlay" v-if="showHelp" @click.self="showHelp = false">
+                <div class="modal-overlay" v-if="activeOverlay === 'help'" @click.self="activeOverlay = null">
                  <div class="modal" role="dialog" aria-modal="true" @click.stop>
                    <h2 class="modal-title">Keyboard shortcuts</h2>
                    <div class="modal-body">
@@ -734,13 +732,13 @@ window.AppComponent = {
                      <p class="rename-hint">Press <kbd>?</kbd> at any time to open this panel.</p>
                    </div>
                    <div class="modal-actions">
-                     <button class="modal-btn modal-btn--muted" @click="showHelp = false">Close</button>
+                      <button class="modal-btn modal-btn--muted" @click="activeOverlay = null">Close</button>
                    </div>
                  </div>
                </div>
 
                 <!-- Code view modal -->
-                <div class="modal-overlay" v-if="showCodeView" @click.self="closeCodeView">
+                 <div class="modal-overlay" v-if="activeOverlay === 'code'" @click.self="closeCodeView">
                   <div class="modal modal--code" role="dialog" aria-modal="true" @click.stop>
                     <h2 class="modal-title">bookmarks.js</h2>
                     <div class="modal-body">

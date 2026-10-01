@@ -4,8 +4,8 @@
  *   isTyping(target)   → true when the event target is a text input / textarea /
  *                       contentEditable region, so single-letter shortcuts can
  *                       yield to native typing.
- *   isModalOpen(state) → true while a modal overlay (editor, rename, or code
- *                       view) is visible, so global letter shortcuts are
+ *   isModalOpen(overlay) → true while a blocking overlay (editor, rename, or
+    *                       code view) is visible, so global letter shortcuts are
  *                       suppressed to avoid accidental modal actions.
  * No DOM mutation, no I/O, no Vue.  Exposed as window.Keyboard.
  */
@@ -19,9 +19,12 @@ window.Keyboard = {
     return tag === 'INPUT' || tag === 'TEXTAREA' || !!target.isContentEditable;
     },
 
-    // True while the editor or rename modal is on screen — global letter
-    // shortcuts are suppressed in that state to avoid accidental modal actions.
-   isModalOpen(state) {
-    return !!(state.showEditor || state.showRename || state.showCodeView);
+       // True while a *blocking* overlay (editor / rename / code view) is on
+       // screen — global letter shortcuts are suppressed. 'help' is intentionally
+       // not blocking: its own key ('?') is handled by the component. The caller
+       // passes a single overlay identity, so this module no longer tracks the
+       // component's individual flag names.
+   isModalOpen(overlay) {
+    return overlay === 'editor' || overlay === 'rename' || overlay === 'code';
     }
 };
