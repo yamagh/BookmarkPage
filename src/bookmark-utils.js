@@ -30,6 +30,22 @@ window.BookmarkUtils = {
        };
        },
 
+    // Normalize the per-tag keyword registry (meta.tagKeywords): a list of
+    // { name, keywords[] } entries. Deduped by tag name, keywords coerced via
+    // toList so a comma string or a stored array both collapse to an array.
+  normalizeTagKeywords(raw) {
+    if (!Array.isArray(raw)) return [];
+    const out = [];
+    const seen = new Set();
+    for (const o of raw) {
+      if (!o || typeof o !== 'object') continue;
+      const name = String(o.name || '').trim();
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      out.push({ name, keywords: BookmarkUtils.toList(o.keywords) });
+    }
+    return out;
+  },
   normalizeBookmarks(bookmarks) {
     return bookmarks.map(bm => BookmarkUtils.toBookmark(bm));
      },
@@ -53,11 +69,18 @@ window.BookmarkUtils = {
       return `${pad}{\n${lines.join(',\n')}\n${pad}}`;
        });
     let out = `const bookmarks = [\n${items.join(',\n')}\n];\n`;
-    // Emit a `const meta` block so a re-downloaded file round-trips the
-    // user's custom tag order; omitted when there is none.
-    if (meta && Array.isArray(meta.tagOrder) && meta.tagOrder.length) {
-      out += `\nconst meta = ${JSON.stringify({ tagOrder: meta.tagOrder }, null, 2)};\n`;
-     }
+    // Emit a `const meta` block so a re-downloaded file round-trips the user's
+    // custom tag order and per-tag keywords; omitted when both are empty.
+    const tagOrder = (meta && Array.isArray(meta.tagOrder)) ? meta.tagOrder : [];
+    const tagKeywords = (meta && Array.isArray(meta.tagKeywords) ? meta.tagKeywords : [])
+       .map(o => o ? { name: String(o.name || ''), keywords: BookmarkUtils.toList(o.keywords) } : null)
+       .filter(o => o && o.name);
+    const metaOut = {};
+    if (tagOrder.length) metaOut.tagOrder = tagOrder;
+    if (tagKeywords.length) metaOut.tagKeywords = tagKeywords;
+    if (Object.keys(metaOut).length) {
+      out += `\nconst meta = ${JSON.stringify(metaOut, null, 2)};\n`;
+    }
     return out;
     },
 

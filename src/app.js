@@ -14,8 +14,8 @@ window.AppComponent = {
         window.BookmarkUtils.cloneBookmarks(bookmarks)
         ),
        // ---- overlay state: at most one overlay is open at a time.
-       // 'editor' | 'rename' | 'code' | 'help'; null = none.
-       // Per-overlay payloads follow (editing / renamingTag / codeViewText).
+         // 'editor' | 'settings' | 'code' | 'help'; null = none.
+        // Per-overlay payloads follow (editing / tagSettings / codeViewText).
       activeOverlay: null,
        // editor payload
       isNew: false,
@@ -26,9 +26,10 @@ window.AppComponent = {
       tagInput: '',
       tagPickerOpen: false,
       tagSuggestionIndex: -1,
-       // rename payload
-      renamingTag: '',
-      newTag: '',
+          // tag settings payload: the extensible per-tag form. Add a key here for
+          // each new setting, then wire it through openTagSettings / saveTagSettings.
+        activeTagSettings: '',
+        tagSettings: { name: '', keywords: '' },
       focusIndex: -1,
        // tag-order state
       meta: window.SideEffects.loadMeta(),
@@ -41,8 +42,12 @@ window.AppComponent = {
 
   computed: {
     catalog() {
-      return window.Catalog.index(this.bookmarks, this.query, this.meta ? this.meta.tagOrder : undefined);
-    },
+      return window.Catalog.index(
+        this.bookmarks, this.query,
+        this.meta ? this.meta.tagOrder : undefined,
+        this.meta ? this.meta.tagKeywords : undefined
+        );
+      },
 
     treeFlat() {
       const expanded = this.expandedTags;
@@ -58,10 +63,10 @@ window.AppComponent = {
      },
 
 
-    renameCount() {
-      if (!this.renamingTag) return 0;
-      return this.bookmarks.filter(bm => (bm.tags || []).includes(this.renamingTag)).length;
-    },
+    affectedTagCount() {
+      if (!this.activeTagSettings) return 0;
+      return this.bookmarks.filter(bm => (bm.tags || []).includes(this.activeTagSettings)).length;
+      },
 
     // --- tag picker computed ---
     allTags() {
@@ -421,35 +426,59 @@ window.AppComponent = {
       setTimeout(() => { this.tagPickerOpen = false; }, 150);
     },
 
-    // --- bulk tag rename ---
-    openRename(tag) {
-      this.renamingTag = tag;
-      this.newTag = '';
-      this.activeOverlay = 'rename';
-    },
-
-    closeRename() {
+      // --- tag settings: rename + per-tag keyword configuration in one modal ---
+      // openTagSettings loads a tag's entry into the `tagSettings` form,
+      // saveTagSettings writes it back. Add a new setting by extending the
+      // form here, rendering a `.field` below, and reading it back in saveTagSettings.
+    openTagSettings(tag) {
+      const entry = (this.meta.tagKeywords || []).find(o => o.name === tag);
+      this.activeTagSettings = tag;
+      this.tagSettings = { name: tag, keywords: (entry ? entry.keywords : []).join(', ') };
+      this.activeOverlay = 'settings';
+      this.$nextTick(() => {
+        if (this.$refs.tagSettingsName) this.$refs.tagSettingsName.focus();
+        });
+      },
+    closeTagSettings() {
       this.activeOverlay = null;
-    },
-
-    doRename() {
-      const oldTag = this.renamingTag.trim();
-      const newTag = this.newTag.trim();
-      if (!newTag) {
-        window.ToastUtils.toast('New tag name is required');
+      },
+    saveTagSettings() {
+      const original = this.activeTagSettings;
+      const newName = this.tagSettings.name.trim();
+      if (!newName) {
+        window.ToastUtils.toast('Tag name is required');
         return;
-      }
-      const count = window.Tags.rename(this.bookmarks, oldTag, newTag);
-      if (count === 0) {
-        window.ToastUtils.toast(`No bookmarks found with tag "${oldTag}"`);
-        this.activeOverlay = null;
-        return;
-      }
-      if (this.activeTag === oldTag) this.activeTag = newTag;
+        }
+        // Rename the tag across every bookmark (a no-op when the name is unchanged).
+      if (newName !== original) {
+        window.Tags.rename(this.bookmarks, original, newName);
+        if (this.activeTag === original) this.activeTag = newName;
+        }
+        // Persist (or drop) this tag's keyword entry, keyed by the new name.
+      const keywords = window.BookmarkUtils.toList(this.tagSettings.keywords);
+      const list = this.meta.tagKeywords;
+      const idx = list.findIndex(o => o.name === original);
+      if (keywords.length) {
+        if (idx >= 0) list.splice(idx, 1, { name: newName, keywords });
+        else list.push({ name: newName, keywords });
+        } else if (idx >= 0) {
+        list.splice(idx, 1);
+        }
+      window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
+      this.activeOverlay = null;
+      window.ToastUtils.toast('Tag settings saved');
+      },
+      // Unassign a tag from every bookmark and drop its keyword entry.
+    deleteTagSettings() {
+      const tag = this.activeTagSettings;
+      const count = window.Tags.rename(this.bookmarks, tag, '');
+      const list = this.meta.tagKeywords;
+      const idx = list.findIndex(o => o.name === tag);
+      if (idx >= 0) list.splice(idx, 1);
       this.activeOverlay = null;
       window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
-      window.ToastUtils.toast(`Renamed "${oldTag}" → "${newTag}" (${count})`);
-     },
+      window.ToastUtils.toast(`Unassigned "${tag}" from ${count} bookmark${count === 1 ? '' : 's'}`);
+      },
 
       // Delegate — same fallback logic as the global key handler's Enter case.
     onSearchEnter() {
@@ -548,7 +577,7 @@ window.AppComponent = {
                      <span class="tag-index-chev" v-text="entry.hasChildren ? (entry.expanded ? '▾' : '▸') : ''"></span>
                      <span class="tag-index-name">{{ entry.display }}</span>
                      <span class="tag-index-count">{{ entry.count }}</span>
-                     <button class="tag-index-rename" title="Rename tag" @click.stop="openRename(entry.tag)">✎</button>
+                       <button class="tag-index-settings" title="Tag settings" @click.stop="openTagSettings(entry.tag)">⚙</button>
                   </li>
                </ul>
              </nav>
@@ -693,29 +722,38 @@ window.AppComponent = {
               </div>
             </div>
 
-            <!-- Rename tag modal -->
-             <div class="modal-overlay" v-if="activeOverlay === 'rename'" @click.self="closeRename">
-              <div class="modal" role="dialog" aria-modal="true" @click.stop>
-                <h2 class="modal-title">Rename tag</h2>
-                <div class="modal-body">
-                  <label class="field">
-                    <span class="field-label">Current tag</span>
-                    <input class="field-input" v-model="renamingTag" autocomplete="off" />
-                  </label>
-                  <label class="field">
-                    <span class="field-label">New tag name</span>
-                    <input class="field-input" v-model="newTag" @keyup.enter="doRename" placeholder="Enter new tag…" autocomplete="off" />
-                  </label>
-                  <p class="rename-hint" v-if="renamingTag">
-                    {{ renameCount }} bookmark{{ renameCount !== 1 ? 's' : '' }} with this tag will be updated.
-                  </p>
-                </div>
-                <div class="modal-actions">
-                  <button class="modal-btn modal-btn--muted" @click="closeRename">Cancel</button>
-                  <button class="modal-btn modal-btn--primary" @click="doRename" :disabled="!newTag.trim() || newTag.trim() === (renamingTag || '').trim()">Rename</button>
+                <!-- Tag settings modal — the extensible per-tag settings surface.
+                 Opened from each index row's gear button; currently handles rename
+                 and keyword configuration. To add a setting later: add a key to the
+                 tagSettings form, render a new .field inside the SETTINGS FIELDS
+                 markers, and read it back in saveTagSettings. -->
+              <div class="modal-overlay" v-if="activeOverlay === 'settings'" @click.self="closeTagSettings">
+                <div class="modal" role="dialog" aria-modal="true" @click.stop>
+                  <h2 class="modal-title">Tag settings</h2>
+                  <div class="modal-body">
+                    <!-- SETTINGS FIELDS -->
+                    <label class="field">
+                      <span class="field-label">Tag name</span>
+                      <input ref="tagSettingsName" class="field-input" v-model="tagSettings.name"
+                        @keyup.enter="saveTagSettings" placeholder="Tag name…" autocomplete="off" />
+                    </label>
+                    <label class="field">
+                      <span class="field-label">Keywords <em>(comma separated — abbreviations, other languages)</em></span>
+                      <input class="field-input" v-model="tagSettings.keywords"
+                        placeholder="cxl, 取消 · english, 英" autocomplete="off" />
+                    </label>
+                    <!-- /SETTINGS FIELDS -->
+                    <p class="rename-hint" v-if="activeTagSettings">
+                      {{ affectedTagCount }} bookmark{{ affectedTagCount !== 1 ? 's' : '' }} carry this tag.
+                    </p>
+                  </div>
+                  <div class="modal-actions">
+                    <button v-if="affectedTagCount > 0" class="modal-btn modal-btn--danger" @click="deleteTagSettings">Unassign</button>
+                    <button class="modal-btn modal-btn--muted" @click="closeTagSettings">Cancel</button>
+                    <button class="modal-btn modal-btn--primary" :disabled="!tagSettings.name.trim()" @click="saveTagSettings">Save</button>
+                  </div>
                 </div>
               </div>
-            </div>
                <!-- Keyboard shortcuts overlay -->
                 <div class="modal-overlay" v-if="activeOverlay === 'help'" @click.self="activeOverlay = null">
                  <div class="modal" role="dialog" aria-modal="true" @click.stop>

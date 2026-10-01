@@ -10,8 +10,8 @@ window.Catalog = {
    * @param {string} query raw search string
     * @returns {{ groups: Array<{tag, items, count, hasPath, root, leaf}>, tree: Array<{tag, display, items, count, depth, hasChildren, children?}>, total: number }}
    */
-  index(list, query, tagOrder) {
-    const scored = Catalog._filterAndScore(list, query);
+  index(list, query, tagOrder, tagKeywords) {
+    const scored = Catalog._filterAndScore(list, query, tagKeywords);
     // Ranked by match quality when searching; source order for an empty query.
     if (query && query.trim()) scored.sort((a, b) => b.score - a.score);
     const filtered = scored.map(s => s.bm);
@@ -27,15 +27,18 @@ window.Catalog = {
    // Filter (AND across space-separated parts, OR across fields) and attach a
    // match-quality score per item — exact > prefix > substring, weighted
    // label > tags > keywords — so index() can rank results.
-  _filterAndScore(list, query) {
+    _filterAndScore(list, query, tagKeywords) {
     const q = (query || '').trim().toLowerCase();
     if (!q) return list.map(bm => ({ bm, score: 0 }));
     const parts = q.split(/\s+/);
+    const tagKwMap = Catalog._indexKeywords(tagKeywords);
     const out = [];
     for (const bm of list) {
       const label = (bm.label || '').toLowerCase();
       const tags = bm.tags || [];
-      const keywords = bm.keywords || [];
+       // A bookmark's searchable keywords are its own plus the keywords of any
+       // of its tags, so a tag keyword (e.g. "cxl" → "Cancel") matches the tag.
+      const keywords = Catalog._collectKeywords(tags, bm.keywords, tagKwMap);
       let allMatch = true;
       let score = 0;
       for (const part of parts) {
@@ -67,6 +70,28 @@ window.Catalog = {
      }
     return out;
    },
+       // Map lowercased tag name → its keyword strings, from the tag-keyword
+     // registry (meta.tagKeywords). Indexed once per index() call.
+     _indexKeywords(tagKeywords) {
+      const map = new Map();
+      for (const o of (tagKeywords || [])) {
+        const name = o && String(o.name || '').trim();
+        if (name) map.set(name.toLowerCase(), (o.keywords || []).map(k => String(k || '')));
+       }
+      return map;
+     },
+
+        // A bookmark's searchable keywords: its own, plus the keywords of each of
+     // its tags (looked up in the prebuilt map). Tag-name match is exact, case-folded.
+     _collectKeywords(tags, ownKeywords, tagKwMap) {
+      const keywords = [];
+      for (const k of (ownKeywords || [])) keywords.push(String(k || ''));
+      for (const tag of (tags || [])) {
+        const list = tagKwMap.get(String(tag || '').trim().toLowerCase());
+        if (list) for (const k of list) keywords.push(k);
+       }
+      return keywords;
+     },
 
   _groupByTag(list) {
     const grouped = {};

@@ -73,6 +73,20 @@ The `keywords` and `tags` fields can be either strings or arrays. The applicatio
 
 You can modify or add bookmarks as needed.
 
+## Tag settings (per-tag keywords)
+
+Tags can carry their **own keywords**, separate from each bookmark's keywords —
+useful for abbreviations (`cxl` → a `Cancel` tag) or other languages
+(`english`/`英` → an `英語` tag). While searching, a result matches when the
+query hits a bookmark's field **or** any keyword of a tag it belongs to.
+
+Set them from the sidebar index: hover a tag and click the **⚙ (Tag settings)**
+button to rename the tag and edit its keywords (comma separated) in one modal.
+These settings live in the `meta.tagKeywords` array in `bookmarks.js` and are
+persisted alongside the bookmark list, so they round-trip through
+"Download bookmarks.js".
+
+
 ## License
 
 This project is licensed under the [MIT License](https://chat.openai.com/LICENSE).

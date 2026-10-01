@@ -209,5 +209,6 @@ const bookmarks = [
 ];
 
 const meta = {
-  tagOrder: []
+  tagOrder: [],
+  tagKeywords: []
 };

@@ -1017,10 +1017,10 @@ li.item:hover .item-actions {
 }
 
 /* ============================================
-   RENAME TAG — sidebar trigger + hint
+  TAG SETTINGS — sidebar trigger + hint
       ============================================ */
 
-.tag-index-rename {
+.tag-index-settings {
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
@@ -1038,11 +1038,11 @@ li.item:hover .item-actions {
   margin-left: var(--space-xs);
 }
 
-.tag-index-item:hover .tag-index-rename {
+.tag-index-item:hover .tag-index-settings {
   opacity: .7;
 }
 
-.tag-index-rename:hover {
+.tag-index-settings:hover {
   opacity: 1;
   color: var(--accent);
 }
