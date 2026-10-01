@@ -25,6 +25,7 @@ window.AppComponent = {
        // tag picker state
       tagInput: '',
       tagPickerOpen: false,
+      tagSuggestionIndex: -1,
        // rename payload
       renamingTag: '',
       newTag: '',
@@ -98,6 +99,18 @@ window.AppComponent = {
 
 
   watch: {
+    // Reset the suggestion highlight whenever the typed text changes so the
+    // arrow-highlighted row matches what's on screen, and keep the highlighted row
+    // scrolled into view as the user arrows through the list.
+    tagInput() {
+      this.tagSuggestionIndex = -1;
+     },
+    tagSuggestionIndex(val) {
+      this.$nextTick(() => {
+        const rows = this.$refs.tagSuggestions;
+        if (val >= 0 && Array.isArray(rows)) rows[val]?.scrollIntoView({ block: 'nearest' });
+       });
+     },
     query() {
       this.focusIndex = -1;
       },
@@ -367,9 +380,31 @@ window.AppComponent = {
     },
 
     onTagKeydown(e) {
-      if (e.key === 'Enter') {
+      const sug = this.tagSuggestions;
+      if (e.key === 'ArrowDown') {
+        // Highlight the next suggestion; from 'none', start at the first.
         e.preventDefault();
-        this.addTag(this.tagInput);
+        this.tagPickerOpen = true;
+        if (!sug.length) return;
+        this.tagSuggestionIndex = this.tagSuggestionIndex < 0
+          ? 0
+          : Math.min(this.tagSuggestionIndex + 1, sug.length - 1);
+      } else if (e.key === 'ArrowUp') {
+        // Highlight the previous suggestion; from 'none', start at the last.
+        e.preventDefault();
+        this.tagPickerOpen = true;
+        if (!sug.length) return;
+        this.tagSuggestionIndex = this.tagSuggestionIndex < 0
+          ? sug.length - 1
+          : Math.max(this.tagSuggestionIndex - 1, 0);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        // Prefer the highlighted suggestion; fall back to the typed text.
+        if (this.tagSuggestionIndex >= 0 && sug.length) {
+          this.selectTagFromList(sug[this.tagSuggestionIndex]);
+        } else {
+          this.addTag(this.tagInput);
+        }
       } else if (e.key === 'Backspace' && !this.tagInput && this.editingTags.length) {
         // Remove last tag on empty backspace
         this.removeTag(this.editingTags[this.editingTags.length - 1]);
@@ -384,7 +419,7 @@ window.AppComponent = {
     onTagBlur() {
       // Delay so mousedown on suggestion is captured before blur closes the list
       setTimeout(() => { this.tagPickerOpen = false; }, 150);
-     },
+    },
 
     // --- bulk tag rename ---
     openRename(tag) {
@@ -610,7 +645,7 @@ window.AppComponent = {
                   </label>
                   <!-- Tag picker -->
                   <div class="field">
-                    <span class="field-label">Tags <em>(click to select, / for hierarchy)</em></span>
+                     <span class="field-label">Tags <em>(↑↓ to select, / for hierarchy)</em></span>
                     <div class="tag-picker">
                       <div class="tag-picker-chips" @click="tagPickerOpen = true">
                         <template v-for="tag in editingTags" :key="tag">
@@ -630,9 +665,12 @@ window.AppComponent = {
                         autocomplete="off" />
                       <!-- Suggestions dropdown -->
                       <ul class="tag-suggestions" v-if="tagPickerOpen && tagSuggestions.length">
-                        <li v-for="tag in tagSuggestions" :key="tag"
+                         <li v-for="(tag, i) in tagSuggestions" :key="tag"
+                            ref="tagSuggestions"
                             class="tag-suggestion"
-                            @mousedown.prevent="selectTagFromList(tag)">
+                            :class="{ 'is-focused': i === tagSuggestionIndex }"
+                            @mousedown.prevent="selectTagFromList(tag)"
+                            @mousemove="tagSuggestionIndex = i">
                           {{ tag }}
                         </li>
                       </ul>

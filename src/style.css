@@ -1153,7 +1153,8 @@ li.item:hover .item-actions {
   transition: background-color .12s ease, color var(--transition);
 }
 
-.tag-suggestion:hover {
+.tag-suggestion:hover,
+.tag-suggestion.is-focused {
   background: var(--accent-soft);
   color: var(--accent);
 }
