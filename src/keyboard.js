@@ -4,8 +4,8 @@
  *   isTyping(target)   → true when the event target is a text input / textarea /
  *                       contentEditable region, so single-letter shortcuts can
  *                       yield to native typing.
- *   isModalOpen(overlay) → true while a blocking overlay (editor, settings, or
-    *                       code view) is visible, so global letter shortcuts are
+ *   isModalOpen(overlay) → true while a blocking overlay (editor, settings, code,
+    *                       or manage menu) is visible, so global letter shortcuts are
  *                       suppressed to avoid accidental modal actions.
  * No DOM mutation, no I/O, no Vue.  Exposed as window.Keyboard.
  */
@@ -25,6 +25,6 @@ window.Keyboard = {
        // passes a single overlay identity, so this module no longer tracks the
        // component's individual flag names.
    isModalOpen(overlay) {
-    return overlay === 'editor' || overlay === 'settings' || overlay === 'code';
+    return overlay === 'editor' || overlay === 'settings' || overlay === 'code' || overlay === 'menu';
     }
 };

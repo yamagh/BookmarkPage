@@ -13,9 +13,9 @@ window.AppComponent = {
       originalBookmarks: window.BookmarkUtils.normalizeBookmarks(
         window.BookmarkUtils.cloneBookmarks(bookmarks)
         ),
-       // ---- overlay state: at most one overlay is open at a time.
-         // 'editor' | 'settings' | 'code' | 'help'; null = none.
-        // Per-overlay payloads follow (editing / tagSettings / codeViewText).
+           // ---- overlay state: at most one overlay is open at a time.
+             // 'editor' | 'settings' | 'code' | 'help' | 'menu'; null = none.
+           // Per-overlay payloads follow (editing / tagSettings / codeViewText).
       activeOverlay: null,
        // editor payload
       isNew: false,
@@ -361,11 +361,12 @@ window.AppComponent = {
      },
 
     resetBookmarks() {
-      if (!confirm('Reset to the original bookmarks? Your saved edits will be cleared.')) return;
+      if (!confirm('Reset to the original bookmarks? Your saved edits will be cleared.')) return false;
       this.bookmarks = window.BookmarkUtils.cloneBookmarks(this.originalBookmarks);
       window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
       window.ToastUtils.toast('Reset to original');
-    },
+      return true;
+       },
 
     // --- tag picker methods ---
     addTag(tag) {
@@ -527,6 +528,29 @@ window.AppComponent = {
       this.activeOverlay = this.activeOverlay === 'help' ? null : 'help';
      },
 
+           // --- manage menu: the rail's secondary actions behind one trigger ---
+         openMenu() {
+           this.activeOverlay = 'menu';
+            },
+
+         menuOpenHelp() {
+           this.activeOverlay = 'help';
+            },
+
+         menuOpenCode() {
+           this.openCodeView();
+            },
+
+         menuDownload() {
+           this.downloadBookmarks();
+           this.activeOverlay = null;
+            },
+
+         menuReset() {
+            // Keep the menu open when the user cancels the confirm; close on success.
+            this.activeOverlay = this.resetBookmarks() ? null : 'menu';
+            },
+
       // Close whatever overlay is open — only one is ever open, so this is
       // just a reset (previously a priority stack over four independent flags).
     closeAllModals() {
@@ -588,12 +612,12 @@ window.AppComponent = {
               <span>{{ catalog.groups.length }} tags</span>
             </div>
 
-              <div class="rail-actions">
-                <button class="manage-btn" @click="downloadBookmarks">↓ bookmarks.js</button>
-                <button class="manage-btn manage-btn--muted" @click="resetBookmarks">Reset</button>
-                  <button class="manage-btn manage-btn--muted" @click="toggleHelp" title="Keyboard shortcuts (?)" aria-label="Show keyboard shortcuts">? Keys</button>
-                 <button class="manage-btn manage-btn--muted" @click="openCodeView">⧉ View</button>
-              </div>
+                <div class="rail-actions">
+                   <button class="rail-more" @click="openMenu" title="Manage: view, export, reset, shortcuts" aria-label="Manage bookmark actions">
+                       <span class="rail-more-icon">⋯</span>
+                      Manage
+                   </button>
+                 </div>
 
             <button class="theme-toggle" :title="'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' mode'" @click="toggleTheme">
               {{ theme === 'dark' ? '☀' : '☾' }}
@@ -823,6 +847,46 @@ window.AppComponent = {
                     </div>
                   </div>
                 </div>
+
+                    <!-- Manage menu modal — the rail's secondary actions, one trigger -->
+                    <div class="modal-overlay" v-if="activeOverlay === 'menu'" @click.self="closeAllModals">
+                     <div class="modal modal--menu" role="dialog" aria-modal="true" @click.stop>
+                       <h2 class="modal-title">Manage</h2>
+                       <div class="modal-menu">
+                         <button class="modal-menu-item" @click="menuOpenCode">
+                           <span class="modal-menu-icon">⧉</span>
+                           <span class="modal-menu-text">
+                             <span class="modal-menu-label">View bookmarks.js</span>
+                             <span class="modal-menu-hint">Inspect the raw data file</span>
+                           </span>
+                         </button>
+                         <button class="modal-menu-item" @click="menuDownload">
+                           <span class="modal-menu-icon">↓</span>
+                           <span class="modal-menu-text">
+                             <span class="modal-menu-label">Download bookmarks.js</span>
+                             <span class="modal-menu-hint">Export a re-loadable copy</span>
+                           </span>
+                         </button>
+                         <button class="modal-menu-item" @click="menuOpenHelp">
+                           <span class="modal-menu-icon">?</span>
+                           <span class="modal-menu-text">
+                             <span class="modal-menu-label">Keyboard shortcuts</span>
+                             <span class="modal-menu-hint">Show the shortcut list</span>
+                           </span>
+                         </button>
+                         <button class="modal-menu-item modal-menu-item--danger" @click="menuReset">
+                           <span class="modal-menu-icon">↺</span>
+                           <span class="modal-menu-text">
+                             <span class="modal-menu-label">Reset to original</span>
+                             <span class="modal-menu-hint">Discard saved edits</span>
+                           </span>
+                         </button>
+                       </div>
+                       <div class="modal-actions">
+                         <button class="modal-btn modal-btn--muted" @click="closeAllModals">Close</button>
+                       </div>
+                     </div>
+                   </div>
 
           </main>
 
