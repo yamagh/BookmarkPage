@@ -158,16 +158,12 @@ window.AppComponent = {
           this.draggingTag = null;
           if (target.depth !== 0 || !from || from === target.tag) return;
           const topOrder = this.catalog.tree.map(n => n.tag);
-          const fromIdx = topOrder.indexOf(from);
-          const toIdx = topOrder.indexOf(target.tag);
-          if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
-          topOrder.splice(fromIdx, 1);
-          const insertIdx = fromIdx < toIdx ? toIdx - 1 : toIdx;
-          topOrder.splice(insertIdx, 0, from);
-          this.meta.tagOrder = topOrder;
+          const next = window.Tags.reorder(topOrder, from, target.tag);
+          if (next === topOrder) return;
+          this.meta.tagOrder = next;
           window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
           window.ToastUtils.toast('Tag order updated');
-          },
+        },
         onTagDragEnd() {
           this.draggingTag = null;
           this.dragOverTag = null;

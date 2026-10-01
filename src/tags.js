@@ -118,16 +118,34 @@ window.Tags = {
    * @param {string} [newTag] replacement (empty = delete)
    * @returns {number} count of bookmarks changed
    */
-  rename(list, oldTag, newTag) {
-    let changed = 0;
-    for (const bm of list) {
-      const tags = bm.tags || [];
-      if (!tags.includes(oldTag)) continue;
-      const newTags = tags.filter(t => t !== oldTag);
-      if (newTag && !newTags.includes(newTag)) newTags.push(newTag);
-      bm.tags = newTags;
-      changed++;
+    rename(list, oldTag, newTag) {
+      let changed = 0;
+      for (const bm of list) {
+        const tags = bm.tags || [];
+        if (!tags.includes(oldTag)) continue;
+        const newTags = tags.filter(t => t !== oldTag);
+        if (newTag && !newTags.includes(newTag)) newTags.push(newTag);
+        bm.tags = newTags;
+        changed++;
+      }
+      return changed;
+    },
+
+    /**
+     * Reorder the top-level tag order array by moving `from` to the position of `to`.
+     * Pure: returns a new array on a valid move, the same reference on a no-op.
+     * @param {string[]} order  current top-level tag order
+     * @param {string} from     tag to move
+     * @param {string} to       tag to place `from` adjacent to
+     * @returns {string[]} new order, or the same array if no-op
+     */
+    reorder(order, from, to) {
+      const i = order.indexOf(from);
+      const j = order.indexOf(to);
+      if (i < 0 || j < 0 || i === j) return order;
+      const next = order.slice();
+      next.splice(i, 1);
+      next.splice(i < j ? j - 1 : j, 0, from);
+      return next;
     }
-    return changed;
-  }
-};
+  };
