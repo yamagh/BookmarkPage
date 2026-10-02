@@ -5,12 +5,13 @@
  * window.BookmarkUtils, both defined above.
  *
  *   navigate(bm)              URL navigation; `%s` templates prompt for a term
+ *   copyText(text, label)     write text to the clipboard; execCommand fallback
  *   copyToClipboard(list)     export the list as JSON to the clipboard
  *   downloadFile(name,data,mime)  write content to a downloadable file
  *   getTheme() / setTheme()   read/write the light|dark theme, mirror data-theme
  *   loadBookmarks(src) / saveBookmarks(list, meta)  localStorage 'bookmarks'
- *                        (and 'meta'), falling back to the file's globals
- */
+ *                         (and 'meta'), falling back to the file's globals
+ * */
 window.SideEffects = {
    // URL navigation. A `%s` in the URL means "prompt for a search term first."
   navigate(bm) {
@@ -22,22 +23,30 @@ window.SideEffects = {
      }
    },
 
-   // Clipboard: export as pretty JSON, fall back to execCommand on failure.
-  copyToClipboard(list) {
-    const json = JSON.stringify(list, null, 2);
-    navigator.clipboard.writeText(json)
-       .then(() => window.ToastUtils.toast('Bookmarks copied'))
-       .catch(() => {
-        const ta = document.createElement('textarea');
-        ta.value = json;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        window.ToastUtils.toast('Bookmarks copied');
-       });
-   },
+// Clipboard write: navigator.clipboard → execCommand fallback.
+  // Owns the textarea dance so no caller must know it exists.
+  copyText(text, label = 'Copied') {
+    const toast = (msg) => window.ToastUtils.toast(msg);
+    const fallback = () => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      toast(label);
+    };
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => toast(label)).catch(fallback);
+    } else {
+      fallback();
+    }
+  },
 
+// Clipboard: export as pretty JSON.
+  copyToClipboard(list) {
+    this.copyText(JSON.stringify(list, null, 2), 'Bookmarks copied');
+  },
    // File download: a Blob + a temporary <a download>. Best-effort, toast-notified.
   downloadFile(filename, content, mime) {
     try {

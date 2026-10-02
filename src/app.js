@@ -3,6 +3,22 @@
  * Relies on window.BookmarkUtils, window.Catalog, and window.SideEffects —
  * all exposed as globals via script load order.
  */
+// Keyboard action → component method name.  Hoisted above the component so
+// onKeydown stays a 5-line delegate and the mapping is trivially readable.
+// Each value is the bare method name; onKeydown calls this[name]().
+const _keyDispatch = Object.freeze({
+  close:   'closeAllModals',
+  search:  'focusQueryInput',
+  new:     'addBookmark',
+  theme:   'toggleTheme',
+  help:    'toggleHelp',
+  next:    'focusNextCard',
+  prev:    'focusPrevCard',
+  open:    'openFocusedCard',
+  edit:    'editFocusedCard',
+  delete:  'deleteFocusedCard',
+  });
+
 window.AppComponent = {
   data() {
     return {
@@ -246,81 +262,19 @@ window.AppComponent = {
       this.openEdit(null);
     },
 
-     // Global keydown router — single entry point for all keyboard shortcuts.
-     // Escape has highest priority (closes any open overlay). All other shortcuts
-     // are inert while a modal (editor / rename) or the help overlay is open,
-     // and inert when the user is actively typing in a text field.
+      // Global keydown router — all guard logic and the routing table live in
+        // Keyboard.route; this thin entry point just dispatches the resulting
+        // action.  Escape is not suppressed so the browser's native close
+        // gesture is preserved; every other action calls preventDefault.
     onKeydown(e) {
-       // Escape: close whichever overlay is on screen (help > editor > rename)
-      if (e.key === 'Escape') {
-        this.closeAllModals();
-        return;
-         }
-
-        // Editor / rename modal open — suppress all other global shortcuts
-      if (window.Keyboard.isModalOpen(this.activeOverlay)) return;
-
-        // Help overlay open — only ? can toggle it; all other keys ignored
-      if (this.activeOverlay === 'help') {
-        if (e.key === '?') { e.preventDefault(); this.toggleHelp(); }
-        return;
-         }
-
-      const typing = window.Keyboard.isTyping(e.target);
-      const hasMod = e.ctrlKey || e.metaKey;
-
-        // Modifier combos — inert while the user is inside a text field
-      if (hasMod) {
-        if (typing) return;
-        switch (e.key.toLowerCase()) {
-          case 'e':
-            e.preventDefault();
-            this.editFocusedCard();
-            break;
-          case 'backspace':
-            e.preventDefault();
-            this.deleteFocusedCard();
-            break;
-            }
-        return;
-         }
-
-        // Alt combos: leave to the browser (menu / search navigation)
-      if (e.altKey) return;
-
-        // Single-letter / arrow-key shortcuts
-      switch (e.key) {
-        case '/':
-          if (!typing) { e.preventDefault(); this.focusQueryInput(); }
-          break;
-        case 'n':
-        case 'N':
-          if (!typing) { e.preventDefault(); this.addBookmark(); }
-          break;
-        case 't':
-        case 'T':
-          if (!typing) { e.preventDefault(); this.toggleTheme(); }
-          break;
-        case '?':
-          if (!typing) { e.preventDefault(); this.toggleHelp(); }
-          break;
-        case 'j':
-        case 'J':
-        case 'ArrowDown':
-          if (!typing) { e.preventDefault(); this.focusNextCard(); }
-          break;
-        case 'k':
-        case 'K':
-        case 'ArrowUp':
-          if (!typing) { e.preventDefault(); this.focusPrevCard(); }
-          break;
-        case 'Enter':
-           // Fires when no text field has focus; in-field Enter is handled by
-           // @keydown.enter on the search input (onSearchEnter).
-          if (!typing) { e.preventDefault(); this.openFocusedCard(); }
-          break;
-         }
-    },
+       const action = window.Keyboard.route(e, {
+          isTyping:  window.Keyboard.isTyping(e.target),
+          overlay:   this.activeOverlay,
+       });
+      if (!action) return;
+      if (action !== 'close') e.preventDefault();
+      this[_keyDispatch[action]]();
+      },
 
     deleteEditingBookmark() {
       if (this.isNew) return;
@@ -347,17 +301,7 @@ window.AppComponent = {
       this.activeOverlay = null;
      },
     copyCodeView() {
-      navigator.clipboard?.writeText(this.codeViewText)
-         .then(() => window.ToastUtils.toast('Copied'))
-         .catch(() => {
-          const ta = document.createElement('textarea');
-          ta.value = this.codeViewText;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand('copy');
-          document.body.removeChild(ta);
-          window.ToastUtils.toast('Copied');
-         });
+      window.SideEffects.copyText(this.codeViewText, 'Copied');
      },
 
     resetBookmarks() {
