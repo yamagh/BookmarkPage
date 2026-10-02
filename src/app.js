@@ -1,6 +1,7 @@
 /**
  * Vue component definition for the bookmark manager.
- * Relies on window.BookmarkUtils, window.Catalog, and window.SideEffects —
+ * Relies on window.BookmarkUtils, window.Catalog, window.SideEffects,
+ * window.TagPicker, window.OverlayManager, and window.Keyboard —
  * all exposed as globals via script load order.
  */
 // Keyboard action → component method name.  Hoisted above the component so
@@ -38,10 +39,9 @@ window.AppComponent = {
       editingIndex: -1,
       editing: { label: '', url: '', tags: '', keywords: '', note: '' },
       expandedTags: {},
-       // tag picker state
-      tagInput: '',
-      tagPickerOpen: false,
-      tagSuggestionIndex: -1,
+      // tag picker state — one reactive object; the state machine lives in
+      // window.TagPicker, the component just owns the object and delegates.
+      tagPicker: window.TagPicker.create(),
           // tag settings payload: the extensible per-tag form. Add a key here for
           // each new setting, then wire it through openTagSettings / saveTagSettings.
         activeTagSettings: '',
@@ -94,12 +94,8 @@ window.AppComponent = {
     },
 
     tagSuggestions() {
-      return window.Tags.suggest(
-        this.allTags,
-        this.editingTags,
-        this.tagInput.trim().toLowerCase()
-       );
-      },
+      return window.TagPicker.suggest(this.tagPicker, this.allTags, this.editingTags);
+       },
       flatItems() {
         const result = [];
         for (const group of this.catalog.groups) {
@@ -123,15 +119,15 @@ window.AppComponent = {
     // Reset the suggestion highlight whenever the typed text changes so the
     // arrow-highlighted row matches what's on screen, and keep the highlighted row
     // scrolled into view as the user arrows through the list.
-    tagInput() {
-      this.tagSuggestionIndex = -1;
-     },
-    tagSuggestionIndex(val) {
+   'tagPicker.input'() {
+      this.tagPicker.suggestionIndex = -1;
+      },
+   'tagPicker.suggestionIndex'(val) {
       this.$nextTick(() => {
         const rows = this.$refs.tagSuggestions;
         if (val >= 0 && Array.isArray(rows)) rows[val]?.scrollIntoView({ block: 'nearest' });
-       });
-     },
+        });
+      },
     query() {
       this.focusIndex = -1;
       },
@@ -223,7 +219,7 @@ window.AppComponent = {
         keywords: (bookmark.keywords || []).join(', '),
         note: bookmark.note || ''
       } : { label: '', url: '', tags: '', keywords: '', note: '' };
-      this.tagInput = '';
+      window.TagPicker.reset(this.tagPicker);
       this.activeOverlay = 'editor';
       this.$nextTick(() => {
         if (this.$refs.urlInput) this.$refs.urlInput.focus();
@@ -252,8 +248,7 @@ window.AppComponent = {
       if (this.isNew) this.bookmarks.push(bm);
       else this.bookmarks.splice(this.editingIndex, 1, bm);
       this.activeOverlay = null;
-      this.tagInput = '';
-      this.tagPickerOpen = false;
+      window.TagPicker.reset(this.tagPicker);
       window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
       window.ToastUtils.toast(this.isNew ? 'Bookmark added' : 'Bookmark saved');
     },
@@ -312,64 +307,36 @@ window.AppComponent = {
       return true;
        },
 
-    // --- tag picker methods ---
+     // --- tag picker: delegates to TagPicker (the state machine) ---
     addTag(tag) {
-      const t = (tag || '').trim();
-      if (!t) return;
-      if (!this.editingTags.includes(t)) {
-        this.editing.tags = this.editingTags.length
-          ? this.editing.tags + ', ' + t
-          : t;
-      }
-      this.tagInput = '';
-    },
+      this.editing.tags = window.TagPicker.add(this.editing.tags, tag);
+      this.tagPicker.input = '';
+     },
 
     removeTag(tag) {
-      const remaining = this.editingTags.filter(t => t !== tag);
-      this.editing.tags = remaining.join(', ');
-    },
+      this.editing.tags = window.TagPicker.remove(this.editing.tags, tag);
+     },
 
     onTagKeydown(e) {
-      const sug = this.tagSuggestions;
-      if (e.key === 'ArrowDown') {
-        // Highlight the next suggestion; from 'none', start at the first.
-        e.preventDefault();
-        this.tagPickerOpen = true;
-        if (!sug.length) return;
-        this.tagSuggestionIndex = this.tagSuggestionIndex < 0
-          ? 0
-          : Math.min(this.tagSuggestionIndex + 1, sug.length - 1);
-      } else if (e.key === 'ArrowUp') {
-        // Highlight the previous suggestion; from 'none', start at the last.
-        e.preventDefault();
-        this.tagPickerOpen = true;
-        if (!sug.length) return;
-        this.tagSuggestionIndex = this.tagSuggestionIndex < 0
-          ? sug.length - 1
-          : Math.max(this.tagSuggestionIndex - 1, 0);
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        // Prefer the highlighted suggestion; fall back to the typed text.
-        if (this.tagSuggestionIndex >= 0 && sug.length) {
-          this.selectTagFromList(sug[this.tagSuggestionIndex]);
-        } else {
-          this.addTag(this.tagInput);
-        }
-      } else if (e.key === 'Backspace' && !this.tagInput && this.editingTags.length) {
-        // Remove last tag on empty backspace
-        this.removeTag(this.editingTags[this.editingTags.length - 1]);
-      }
-    },
+      const action = window.TagPicker.onKeydown(e, this.tagPicker, {
+        suggestions: this.tagSuggestions,
+        lastTag: this.editingTags[this.editingTags.length - 1] || null
+       });
+      if (!action) return;
+      if (action.add)   this.addTag(action.add);
+      if (action.remove) this.removeTag(action.remove);
+      if (action.close)  this.tagPicker.open = false;
+      },
 
     selectTagFromList(tag) {
       this.addTag(tag);
-      this.tagPickerOpen = false;
-     },
+      this.tagPicker.open = false;
+      },
 
     onTagBlur() {
       // Delay so mousedown on suggestion is captured before blur closes the list
-      setTimeout(() => { this.tagPickerOpen = false; }, 150);
-    },
+      setTimeout(() => { this.tagPicker.open = false; }, 150);
+     },
 
       // --- tag settings: rename + per-tag keyword configuration in one modal ---
       // openTagSettings loads a tag's entry into the `tagSettings` form,
@@ -469,8 +436,8 @@ window.AppComponent = {
      // --- overlay helpers ---
 
     toggleHelp() {
-      this.activeOverlay = this.activeOverlay === 'help' ? null : 'help';
-     },
+      this.activeOverlay = window.OverlayManager.toggle(this.activeOverlay, 'help');
+      },
 
            // --- manage menu: the rail's secondary actions behind one trigger ---
          openMenu() {
@@ -641,38 +608,38 @@ window.AppComponent = {
                      <input ref="urlInput" class="field-input" v-model="editing.url" placeholder="https://…        (%s = search term)" autocomplete="off" />
                   </label>
                   <!-- Tag picker -->
-                  <div class="field">
-                     <span class="field-label">Tags <em>(↑↓ to select, / for hierarchy)</em></span>
-                    <div class="tag-picker">
-                      <div class="tag-picker-chips" @click="tagPickerOpen = true">
-                        <template v-for="tag in editingTags" :key="tag">
-                          <span class="tag-chip">
-                            {{ tag }}
-                            <button type="button" class="tag-chip-remove" @click.stop="removeTag(tag)">×</button>
-                          </span>
-                        </template>
-                      </div>
-                       <input
+                    <div class="field">
+                       <span class="field-label">Tags <em>(↑↓ to select, / for hierarchy)</em></span>
+                       <div class="tag-picker">
+                         <div class="tag-picker-chips" @click="tagPicker.open = true">
+                           <template v-for="tag in editingTags" :key="tag">
+                             <span class="tag-chip">
+                               {{ tag }}
+                               <button type="button" class="tag-chip-remove" @click.stop="removeTag(tag)">×</button>
+                             </span>
+                           </template>
+                         </div>
+                         <input
                         class="field-input" ref="tagInput"
-                        v-model="tagInput"
-                         @keydown="onTagKeydown"
-                         @focus="tagPickerOpen = true"
-                         @blur="onTagBlur"
+                        v-model="tagPicker.input"
+                          @keydown="onTagKeydown"
+                          @focus="tagPicker.open = true"
+                          @blur="onTagBlur"
                         placeholder="Add tag or select from existing…"
                         autocomplete="off" />
-                      <!-- Suggestions dropdown -->
-                      <ul class="tag-suggestions" v-if="tagPickerOpen && tagSuggestions.length">
-                         <li v-for="(tag, i) in tagSuggestions" :key="tag"
+                       <!-- Suggestions dropdown -->
+                       <ul class="tag-suggestions" v-if="tagPicker.open && tagSuggestions.length">
+                          <li v-for="(tag, i) in tagSuggestions" :key="tag"
                             ref="tagSuggestions"
                             class="tag-suggestion"
-                            :class="{ 'is-focused': i === tagSuggestionIndex }"
-                            @mousedown.prevent="selectTagFromList(tag)"
-                            @mousemove="tagSuggestionIndex = i">
-                          {{ tag }}
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
+                             :class="{ 'is-focused': i === tagPicker.suggestionIndex }"
+                             @mousedown.prevent="selectTagFromList(tag)"
+                             @mousemove="tagPicker.suggestionIndex = i">
+                           {{ tag }}
+                         </li>
+                       </ul>
+                     </div>
+                   </div>
                   <label class="field">
                     <span class="field-label">Keywords <em>(comma separated)</em></span>
                     <input class="field-input" v-model="editing.keywords" placeholder="cg, chatgpt" autocomplete="off" />

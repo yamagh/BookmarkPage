@@ -1,18 +1,19 @@
 /**
  * Keyboard — pure input helpers used by AppComponent.onKeydown.
  *
- *   isTyping(target)    → true when the event target is a text input / textarea /
+ *   isTyping(target)     → true when the event target is a text input / textarea /
  *                       contentEditable region, so single-letter shortcuts can
  *                       yield to native typing.
  *   isModalOpen(overlay) → true while a blocking overlay (editor, settings, code,
  *                       or manage menu) is visible, so global letter shortcuts are
- *                       suppressed to avoid accidental modal actions.
- *   route(e, ctx)       → action name (or null). Pure routing table
+ *                       suppressed.  Delegates to OverlayManager.isBlocking.
+ *   route(e, ctx)        → action name (or null). Pure routing table
  *                       mapping a keydown event + component context to one
  *                       of 10 action names. The component dispatches on the
  *                       returned name; this module owns all guard logic.
  * No DOM mutation, no I/O, no Vue.  Exposed as window.Keyboard.
- * */
+ * Depends on window.OverlayManager (loaded before this file).
+ */
 window.Keyboard = {
 
     // True when the focused element accepts freeform text input.
@@ -23,13 +24,10 @@ window.Keyboard = {
     return tag === 'INPUT' || tag === 'TEXTAREA' || !!target.isContentEditable;
     },
 
-     // True while a *blocking* overlay (editor / settings / code view) is on
-       // screen — global letter shortcuts are suppressed. 'help' is intentionally
-       // not blocking: its own key ('?') is handled by the component. The caller
-       // passes a single overlay identity, so this module no longer tracks the
-       // component's individual flag names.
-   isModalOpen(overlay) {
-    return overlay === 'editor' || overlay === 'settings' || overlay === 'code' || overlay === 'menu';
+  // Blocking overlay decision is centralized in OverlayManager so the
+  // list stays in sync with the component that opens and closes them.
+  isModalOpen(overlay) {
+    return window.OverlayManager.isBlocking(overlay);
     },
 
      /**

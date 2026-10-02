@@ -39,12 +39,16 @@ Order (must stay this way — dependencies point downward):
 
 ```
 vue.global.js (CDN — <script src="https://unpkg.com/vue@3/dist/vue.global.js">
- → bookmarks.js           `const bookmarks = [...]`                      (root: global data array)
- → src/bookmark-utils.js `window.BookmarkUtils`                         (normalization, favicon)
- → src/catalog.js        `window.Catalog`                                (filter · group · sort · count)
- → src/toast-utils.js    `window.ToastUtils`
- → src/side-effects.js   `window.SideEffects`                           (needs ToastUtils + BookmarkUtils)
- → src/app.js            `window.AppComponent`                          (needs Catalog + SideEffects + BookmarkUtils)
+ → bookmarks.js            `const bookmarks = [...]`              (root: global data array)
+ → src/bookmark-utils.js `window.BookmarkUtils`                (normalization, favicon)
+ → src/tags.js            `window.Tags`                          (collect · suggest · rename · reorder · tree)
+ → src/tag-picker.js      `window.TagPicker`                     (picker state machine; needs Tags + BookmarkUtils)
+ → src/catalog.js         `window.Catalog`                       (filter · group · sort · count)
+ → src/overlay-manager.js `window.OverlayManager`                (overlay identity + blocking registry)
+ → src/toast-utils.js     `window.ToastUtils`
+ → src/keyboard.js        `window.Keyboard`                      (keydown routing; needs OverlayManager)
+ → src/side-effects.js    `window.SideEffects`                   (needs ToastUtils + BookmarkUtils)
+ → src/app.js             `window.AppComponent`                  (needs Catalog + SideEffects + TagPicker + Keyboard)
  → src/main.js           Vue.createApp(...).mount('#bookmark-app')
 ```
 
@@ -69,8 +73,8 @@ space-separated parts, OR across fields.
 
 - `bookmarks.html` — the thin entry point. In `<head>` it keeps a pre-render
   theme-detection inline script (runs before paint, to avoid a flash of the wrong
-  theme) plus the font `preconnect`/`<link>` and `src/style.css`; in `<body>` it loads
-  the Vue CDN, then `bookmarks.js` (root), then the six `src/` scripts in dependency order.
+  theme) plus the font `preconnect`/<link> and `src/style.css`; in `<body>` it loads
+  the Vue CDN, then `bookmarks.js` (root), then the nine `src/` scripts in dependency order.
 - `bookmarks.js` — the `const bookmarks = [...]` data array (root; the most-edited file;
    re-loadable from the "Download bookmarks.js" button).
 - `src/style.css` — all CSS: design tokens, light (`:root`) + dark
@@ -79,12 +83,22 @@ space-separated parts, OR across fields.
    bookmark shape via `toBookmark` (and the `toList` field-to-array primitive it
    builds on). `normalizeBookmarks` (load) and `serializeBookmarks` (save) both
    route through it, plus `faviconUrl`.
+- `src/tags.js` — `window.Tags`, the tag domain (collect · suggest · rename ·
+  reorder · tree). Pure: no DOM, no Vue.
+- `src/tag-picker.js` — `window.TagPicker`, the tag input + suggestion state
+  machine. Owns add / remove / keyboard-nav / blur as pure functions the
+  component delegates to. Depends on `Tags.suggest` and `BookmarkUtils.toList`.
 - `src/catalog.js` — `window.Catalog`, the query pipeline (filter · group · sort ·
-   count). Pure: `index(list, query) → { groups, total }`. No DOM, no Vue.
+   count). Pure: `index(list, query, tagOrder, tagKeywords) → { groups, tree, total }`.
+   No DOM, no Vue.
+- `src/overlay-manager.js` — `window.OverlayManager`, the overlay identity +
+  blocking registry. Pure constants; centralizes which overlays suppress keyboard.
 - `src/toast-utils.js` — `window.ToastUtils` (toast notifications).
+- `src/keyboard.js` — `window.Keyboard`, pure keydown routing. `route(e, ctx)`
+  returns an action name; `isModalOpen` delegates to `OverlayManager.isBlocking`.
 - `src/side-effects.js` — `window.SideEffects`, the single I/O boundary (nav / clipboard /
    download / storage); the five former shallow I/O modules
-   (NavigationService/ClipboardService/DownloadService/ThemeManager/BookmarkStore) are now one `SideEffects`.
+    (NavigationService/ClipboardService/DownloadService/ThemeManager/BookmarkStore) are now one `SideEffects`.
 - `src/app.js` — `window.AppComponent` (the Vue component + its template string).
 - `src/main.js` — bootstrap: `Vue.createApp(window.AppComponent).mount('#bookmark-app')`.
 - external resources only beyond the above: Vue 3 CDN + Google Fonts.
@@ -111,6 +125,11 @@ No `npm install`, `npm run build`, or lint/test scripts exist.
 - **Globals over modules.** Each `.js` module — a classic `<script src>` loaded in
    dependency order — does `window.XxxName = { … }`. Names: `PascalCase` for
    the `window` object
+       (`AppComponent`, `BookmarkUtils`, `Catalog`, `Tags`, `TagPicker`,
+       `OverlayManager`, `Keyboard`, `SideEffects`, `ToastUtils`); `camelCase`
+   for its methods (`normalizeBookmarks`, `faviconUrl`, `index`, `navigate`,
+       `copyText` / `copyToClipboard`, `downloadFile`, `getTheme` / `setTheme`,
+       `loadBookmarks` / `saveBookmarks`, `route` / `isModalOpen`).
       (`AppComponent`, `BookmarkUtils`, `Catalog`, `SideEffects`, `ToastUtils`); `camelCase`
    for its methods (`normalizeBookmarks`, `faviconUrl`, `index`, `navigate`,
       `copyToClipboard`, `downloadFile`, `getTheme`/`setTheme`,
