@@ -207,6 +207,20 @@ window.AppComponent = {
       return window.BookmarkUtils.faviconUrl(url);
     },
 
+    // The 'other tags' a bookmark carries: every tag except the one it is
+    // currently grouped under (the group's full tag path). Empty for the
+    // 'Untagged' group, whose members have no tags.
+    otherTags(bm, group) {
+      const g = group.tag;
+      return (bm.tags || []).filter(t => t && t !== g);
+    },
+
+    // Toggle the optional 'show other tags' display, persisted with meta.
+    toggleShowOtherTags() {
+      this.meta.showOtherTags = !this.meta.showOtherTags;
+      window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
+    },
+
     // --- editor: open modal for an existing bookmark, or a blank one to add ---
     openEdit(bookmark) {
       const index = bookmark ? this.bookmarks.indexOf(bookmark) : -1;
@@ -538,7 +552,12 @@ window.AppComponent = {
           <main class="main">
             <header class="search-bar">
                  <div class="search-bar-top">
-                   <span class="query-label">Search</span>
+                  <span class="query-label">Search</span>
+                  <label class="tag-toggle" title="Show the other tags each bookmark carries">
+                    <input type="checkbox" class="tag-toggle-input" :checked="meta.showOtherTags" @change="toggleShowOtherTags" />
+                    <span class="tag-toggle-box"></span>
+                    <span class="tag-toggle-label">Other tags</span>
+                  </label>
                  </div>
               <div class="action-query">
                 <div class="icon-search">⌕</div>
@@ -584,6 +603,9 @@ window.AppComponent = {
                            <span class="item-label">{{ bm.label || bm.url }}</span>
                         </a>
                         <p v-if="bm.note" class="bm-note">{{ bm.note }}</p>
+                        <div v-if="meta.showOtherTags && otherTags(bm, group).length" class="item-tags">
+                          <span v-for="t in otherTags(bm, group)" :key="t" class="item-tag">{{ t }}</span>
+                        </div>
                         <div class="item-actions">
                           <button class="item-action" title="Edit" @click="openEdit(bm)">✎</button>
                         </div>

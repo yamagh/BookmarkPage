@@ -86,6 +86,16 @@ These settings live in the `meta.tagKeywords` array in `bookmarks.js` and are
 persisted alongside the bookmark list, so they round-trip through
 "Download bookmarks.js".
 
+## Showing a bookmark's other tags
+
+By default each result is filed under one tag, so its remaining tags are not
+shown. Flip the **Other tags** toggle in the search bar to surface the other
+tags a result carries *in addition to* the one it is grouped under — e.g. a
+`foo project` result that also has `Google Drive` shows `Google Drive`
+beneath it. It defaults off and is persisted in `meta.showOtherTags`, so it
+round-trips through "Download bookmarks.js".
+
+
 
 ## License
 

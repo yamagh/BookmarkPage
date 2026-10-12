@@ -117,7 +117,7 @@ window.SideEffects = {
 
   // Meta persistence: localStorage 'meta', falling back to the file's global
   // `meta` (emitted as a const by serializeBookmarks). Always returns
-   // { tagOrder: string[], tagKeywords: { name, keywords[] }[] }.
+  // { tagOrder, tagKeywords, showOtherTags: boolean }.
   loadMeta() {
      // Prefer stored meta (localStorage), then the file's global `meta`, then
      // an empty meta. tagKeywords is normalized so old stored data round-trips.
@@ -131,7 +131,8 @@ window.SideEffects = {
      }
     return {
       tagOrder: Array.isArray(raw && raw.tagOrder) ? raw.tagOrder.slice() : [],
-      tagKeywords: window.BookmarkUtils.normalizeTagKeywords(raw ? raw.tagKeywords : [])
-     };
+      tagKeywords: window.BookmarkUtils.normalizeTagKeywords(raw ? raw.tagKeywords : []),
+      showOtherTags: !!(raw && raw.showOtherTags)
+    };
    }
 };

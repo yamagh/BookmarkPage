@@ -78,6 +78,9 @@ window.BookmarkUtils = {
     const metaOut = {};
     if (tagOrder.length) metaOut.tagOrder = tagOrder;
     if (tagKeywords.length) metaOut.tagKeywords = tagKeywords;
+    // Carry the 'show other tags' display preference so a re-downloaded file
+    // keeps it; omitted when off to keep the file clean.
+    if (meta && meta.showOtherTags) metaOut.showOtherTags = true;
     if (Object.keys(metaOut).length) {
       out += `\nconst meta = ${JSON.stringify(metaOut, null, 2)};\n`;
     }

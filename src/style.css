@@ -463,6 +463,68 @@ body::after {
   font-weight: 400;
   font-family: "Instrument Sans", sans-serif;
 }
+/* 'Other tags' toggle — quiet checkbox control beside the Search label in the
+  search bar. A native input is hidden and a small drawn box stands in for it. */
+.tag-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  cursor: pointer;
+  color: var(--text-tertiary);
+  transition: color var(--transition);
+}
+
+.tag-toggle:hover {
+  color: var(--accent);
+}
+
+.tag-toggle-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tag-toggle-box {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  transition: background-color var(--transition), border-color var(--transition);
+}
+
+.tag-toggle-input:checked + .tag-toggle-box {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tag-toggle-input:checked + .tag-toggle-box::after {
+  content: "✓";
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+}
+
+[data-theme="dark"] .tag-toggle-input:checked + .tag-toggle-box::after {
+  color: #1a1712;
+}
+
+.tag-toggle-input:focus-visible + .tag-toggle-box {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.tag-toggle-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
 
 /* ============================================
    EMPTY STATES — ornaments + serif heading
@@ -694,6 +756,28 @@ li.item:hover .bm-favicon {
   -webkit-box-orient: vertical;
   transition: color var(--transition);
 }
+/* Other tags — small muted chips under an item; shown only when
+  the 'show other tags' preference is on. Aligned with the note. */
+.item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+  padding-left: 25px;
+}
+
+.item-tag {
+  font-family: "Instrument Sans", system-ui, sans-serif;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--text-tertiary);
+  background: var(--accent-soft);
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  padding: 0 6px;
+  transition: color var(--transition), background-color var(--transition);
+}
+
 
 /* Per-item edit / delete actions — revealed on hover */
 .item-actions {
