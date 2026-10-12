@@ -26,7 +26,7 @@ window.Catalog = {
 
    // Filter (AND across space-separated parts, OR across fields) and attach a
    // match-quality score per item — exact > prefix > substring, weighted
-   // label > tags > keywords — so index() can rank results.
+   // label > (tags, url) > keywords — so index() can rank results.
     _filterAndScore(list, query, tagKeywords) {
     const q = (query || '').trim().toLowerCase();
     if (!q) return list.map(bm => ({ bm, score: 0 }));
@@ -35,6 +35,7 @@ window.Catalog = {
     const out = [];
     for (const bm of list) {
       const label = (bm.label || '').toLowerCase();
+      const url = (bm.url || '').toLowerCase();
       const tags = bm.tags || [];
        // A bookmark's searchable keywords are its own plus the keywords of any
        // of its tags, so a tag keyword (e.g. "cxl" → "Cancel") matches the tag.
@@ -61,8 +62,12 @@ window.Catalog = {
           const v = s === part ? 10 : s.startsWith(part) ? 5 : s.includes(part) ? 1 : 0;
           if (v > kwScore) kwScore = v;
          }
+        let urlScore = 0;
+        if (url === part) urlScore = 20;
+        else if (url.startsWith(part)) urlScore = 10;
+        else if (url.includes(part)) urlScore = 2;
 
-        const best = Math.max(labelScore, tagScore, kwScore);
+        const best = Math.max(labelScore, tagScore, kwScore, urlScore);
         if (best === 0) { allMatch = false; break; }
         score += best;
        }

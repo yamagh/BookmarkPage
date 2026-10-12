@@ -66,7 +66,7 @@ array in `bookmarks.js` when nothing is stored); "Download bookmarks.js" seriali
 
 **Search semantics** (`Catalog._filter`): query is trimmed,
 lowercased, split on whitespace; every part must match *some* of
-`label`/`tags`/`keywords` (case-insensitive `includes`) — i.e. AND across
+`label`/`url`/`tags`/`keywords` (case-insensitive `includes`) — i.e. AND across
 space-separated parts, OR across fields.
 
 ## Project Files
