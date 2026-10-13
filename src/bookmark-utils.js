@@ -30,9 +30,10 @@ window.BookmarkUtils = {
        };
        },
 
-    // Normalize the per-tag keyword registry (meta.tagKeywords): a list of
-    // { name, keywords[] } entries. Deduped by tag name, keywords coerced via
-    // toList so a comma string or a stored array both collapse to an array.
+    // Normalize the per-tag settings registry (meta.tagKeywords): a list of
+    // { name, keywords[], emoji } entries. Deduped by tag name, keywords coerced
+    // via toList and emoji coerced to a trimmed string ('' = no icon), so a stored
+    // array and an emoji-less legacy entry both round-trip.
   normalizeTagKeywords(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
@@ -42,7 +43,11 @@ window.BookmarkUtils = {
       const name = String(o.name || '').trim();
       if (!name || seen.has(name)) continue;
       seen.add(name);
-      out.push({ name, keywords: BookmarkUtils.toList(o.keywords) });
+      out.push({
+        name,
+        keywords: BookmarkUtils.toList(o.keywords),
+        emoji: o.emoji ? String(o.emoji).trim() : ''
+      });
     }
     return out;
   },
@@ -72,9 +77,22 @@ window.BookmarkUtils = {
     // Emit a `const meta` block so a re-downloaded file round-trips the user's
     // custom tag order and per-tag keywords; omitted when both are empty.
     const tagOrder = (meta && Array.isArray(meta.tagOrder)) ? meta.tagOrder : [];
+    // Emit per-tag settings entries, dropping one that has neither keywords
+    // nor an icon (AC7). The `emoji` key is omitted when empty so keyword-only
+    // entries round-trip as the legacy shape (a missing emoji loads as '' = none).
     const tagKeywords = (meta && Array.isArray(meta.tagKeywords) ? meta.tagKeywords : [])
-       .map(o => o ? { name: String(o.name || ''), keywords: BookmarkUtils.toList(o.keywords) } : null)
-       .filter(o => o && o.name);
+      .map(o => {
+        if (!o) return null;
+        const name = String(o.name || '');
+        if (!name) return null;
+        const keywords = BookmarkUtils.toList(o.keywords);
+        const emoji = o.emoji ? String(o.emoji).trim() : '';
+        if (!keywords.length && !emoji) return null;
+        const out = { name, keywords };
+        if (emoji) out.emoji = emoji;
+        return out;
+      })
+      .filter(Boolean);
     const metaOut = {};
     if (tagOrder.length) metaOut.tagOrder = tagOrder;
     if (tagKeywords.length) metaOut.tagKeywords = tagKeywords;

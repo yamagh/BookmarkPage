@@ -290,6 +290,7 @@ body::after {
   text-overflow: ellipsis;
 }
 
+
 .tag-index-count {
   color: var(--text-tertiary);
   font-size: 11px;
@@ -616,6 +617,12 @@ li.tag {
   flex: 1 1 auto;
   transition: color var(--transition);
 }
+.tag-emoji {
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
 
 .tag-count {
   font-size: 12px;
@@ -777,6 +784,10 @@ li.item:hover .bm-favicon {
   padding: 0 6px;
   transition: color var(--transition), background-color var(--transition);
 }
+.item-tag-emoji {
+  font-size: 11px;
+  margin-right: 3px;
+}
 
 
 /* Per-item edit / delete actions — revealed on hover */
@@ -922,6 +933,11 @@ li.item:hover .item-actions {
   border-radius: 4px;
   padding: var(--space-s) var(--space-m);
   transition: border-color var(--transition), background-color var(--transition);
+}
+/* Emoji picker input: larger glyphs, centered for ergonomics. */
+.field-input--emoji {
+  font-size: 22px;
+  text-align: center;
 }
 
 .field-input:focus {
@@ -1074,6 +1090,15 @@ li.item:hover .item-actions {
 
 .tag-index-item.has-children .tag-index-chev {
   color: var(--accent);
+}
+/* When the icon slot shows a tag's emoji instead of a chevron (a leaf tag),
+   give it room. Placed after .tag-index-chev so it wins by source order; the
+   chevron glyph (▸/▾) for parents keeps the base 10px/10px slot. */
+.tag-index-emoji {
+  width: 18px;
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 /* tag-groups path rendering — parent muted, leaf primary */

@@ -45,7 +45,7 @@ window.AppComponent = {
           // tag settings payload: the extensible per-tag form. Add a key here for
           // each new setting, then wire it through openTagSettings / saveTagSettings.
         activeTagSettings: '',
-        tagSettings: { name: '', keywords: '' },
+        tagSettings: { name: '', keywords: '', emoji: '' },
       focusIndex: -1,
        // tag-order state
       meta: window.SideEffects.loadMeta(),
@@ -70,7 +70,7 @@ window.AppComponent = {
       const result = [];
       const walk = (nodes) => {
         for (const node of nodes) {
-          result.push({ ...node, expanded: !!expanded[node.tag] });
+          result.push({ ...node, expanded: !!expanded[node.tag], emoji: this.emojiForTag(node.tag) });
           if (expanded[node.tag] && node.children) walk(node.children);
          }
        };
@@ -96,6 +96,17 @@ window.AppComponent = {
     tagSuggestions() {
       return window.TagPicker.suggest(this.tagPicker, this.allTags, this.editingTags);
        },
+    // tag name → its icon emoji, from the per-tag settings registry
+    // (meta.tagKeywords). '' (absent) means no icon. Cached as a name→emoji Map.
+    tagEmojiMap() {
+      const map = new Map();
+      for (const o of (this.meta && this.meta.tagKeywords) || []) {
+        const name = o && String(o.name || '').trim();
+        const emoji = o && o.emoji ? String(o.emoji).trim() : '';
+        if (name && emoji) map.set(name.toLowerCase(), emoji);
+      }
+      return map;
+    },
       flatItems() {
         const result = [];
         for (const group of this.catalog.groups) {
@@ -107,7 +118,7 @@ window.AppComponent = {
       flatGroups() {
         let offset = 0;
         return this.catalog.groups.map(g => {
-          const entry = { ...g, flatStart: offset };
+          const entry = { ...g, flatStart: offset, emoji: this.emojiForTag(g.tag) };
           offset += g.items.length;
           return entry;
             });
@@ -214,6 +225,44 @@ window.AppComponent = {
       const g = group.tag;
       return (bm.tags || []).filter(t => t && t !== g);
     },
+      // Icon emoji for a tag (its full path), '' when none is set — a cached
+      // O(1) lookup into the tagEmojiMap registry.
+      emojiForTag(tag) {
+        const name = String(tag || '').trim();
+        return this.tagEmojiMap.get(name.toLowerCase()) || '';
+      },
+      // railIcon(entry): the rail icon-slot glyph — a parent shows its ▸/▾ chevron
+      // (priority, even when an emoji is set); a leaf shows its emoji or '' empty.
+      railIcon(entry) {
+        return entry.hasChildren ? (entry.expanded ? '▾' : '▸') : (entry.emoji || '');
+      },
+      // The tag-icon field accepts exactly one glyph (one emoji). A naive
+      // maxlength="1" would forbid most emoji — they are multi-unit surrogate
+      // pairs or ZWJ sequences — so we instead keep the first *grapheme cluster*
+      // via Intl.Segmenter, with a one-code-point fallback. The :value binding
+      // is one-way, so writing back the normalized value does not fight v-model.
+      onIconInput(e) {
+        const raw = e && e.target ? e.target.value : this.tagSettings.emoji;
+        this.tagSettings.emoji = this._firstGrapheme(raw);
+      },
+      _firstGrapheme(str) {
+        str = String(str || '');
+        if (!str) return '';
+        // Keep the first grapheme cluster (one emoji, ZWJ-aware) when the
+        // runtime supports it. `new` is required — some engines throw when
+        // Intl.Segmenter is invoked without it.
+        try {
+          if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
+            const first = [...new Intl.Segmenter().segment(str)].find(s => s.segment);
+            return first ? first.segment : str;
+          }
+        } catch (e) {
+          /* fall through to the code-point heuristic below */
+        }
+        // Fallback: keep one code point — plain chars + simple surrogate-pair
+        // emoji work; a ZWJ sequence is the one edge case this can't split.
+        return Array.from(str)[0] || '';
+      },
 
     // Toggle the optional 'show other tags' display, persisted with meta.
     toggleShowOtherTags() {
@@ -359,7 +408,11 @@ window.AppComponent = {
     openTagSettings(tag) {
       const entry = (this.meta.tagKeywords || []).find(o => o.name === tag);
       this.activeTagSettings = tag;
-      this.tagSettings = { name: tag, keywords: (entry ? entry.keywords : []).join(', ') };
+      this.tagSettings = {
+        name: tag,
+        keywords: (entry ? entry.keywords : []).join(', '),
+        emoji: entry ? (entry.emoji || '') : ''
+      };
       this.activeOverlay = 'settings';
       this.$nextTick(() => {
         if (this.$refs.tagSettingsName) this.$refs.tagSettingsName.focus();
@@ -380,16 +433,21 @@ window.AppComponent = {
         window.Tags.rename(this.bookmarks, original, newName);
         if (this.activeTag === original) this.activeTag = newName;
         }
-        // Persist (or drop) this tag's keyword entry, keyed by the new name.
+      // Persist (or drop) this tag's settings entry, keyed by the new name. The
+      // entry is kept when either keywords or an icon is set; both empty drops it.
       const keywords = window.BookmarkUtils.toList(this.tagSettings.keywords);
+      const emoji = this._firstGrapheme(this.tagSettings.emoji).trim();
+      const entry = { name: newName, keywords, emoji };
       const list = this.meta.tagKeywords;
       const idx = list.findIndex(o => o.name === original);
-      if (keywords.length) {
-        if (idx >= 0) list.splice(idx, 1, { name: newName, keywords });
-        else list.push({ name: newName, keywords });
-        } else if (idx >= 0) {
+      // Keep the settings entry when there is *anything* to carry (keywords or icon);
+      // with both empty, drop it so the tag shows no icon and keeps no entry.
+      if (keywords.length || emoji) {
+        if (idx >= 0) list.splice(idx, 1, entry);
+        else list.push(entry);
+      } else if (idx >= 0) {
         list.splice(idx, 1);
-        }
+      }
       window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
       this.activeOverlay = null;
       window.ToastUtils.toast('Tag settings saved');
@@ -523,7 +581,7 @@ window.AppComponent = {
                     @dragend="onTagDragEnd()"
                     :title="entry.depth === 0 ? 'Drag to reorder' : ''"
                     @click="entry.hasChildren ? toggleExpand(entry.tag) : scrollToTag(entry.tag)">
-                     <span class="tag-index-chev" v-text="entry.hasChildren ? (entry.expanded ? '▾' : '▸') : ''"></span>
+                     <span class="tag-index-chev" :class="{ 'tag-index-emoji': !entry.hasChildren && entry.emoji }" v-if="railIcon(entry)" v-text="railIcon(entry)"></span>
                      <span class="tag-index-name">{{ entry.display }}</span>
                      <span class="tag-index-count">{{ entry.count }}</span>
                        <button class="tag-index-settings" title="Tag settings" @click.stop="openTagSettings(entry.tag)">⚙</button>
@@ -585,6 +643,7 @@ window.AppComponent = {
                  <div class="tag-content">
                    <div class="tag-head">
                      <span class="tag-number">{{ String(i + 1).padStart(2, '0') }}</span>
+                    <span class="tag-emoji" v-if="group.emoji" v-text="group.emoji"></span>
                        <span class="tag-name">
                          <template v-if="group.hasPath">
                            <span class="tag-path-root">{{ group.root }}</span>
@@ -604,7 +663,10 @@ window.AppComponent = {
                         </a>
                         <p v-if="bm.note" class="bm-note">{{ bm.note }}</p>
                         <div v-if="meta.showOtherTags && otherTags(bm, group).length" class="item-tags">
-                          <span v-for="t in otherTags(bm, group)" :key="t" class="item-tag">{{ t }}</span>
+                          <span v-for="t in otherTags(bm, group)" :key="t" class="item-tag">
+                            <span class="item-tag-emoji" v-if="emojiForTag(t)" v-text="emojiForTag(t)"></span>
+                            {{ t }}
+                          </span>
                         </div>
                         <div class="item-actions">
                           <button class="item-action" title="Edit" @click="openEdit(bm)">✎</button>
@@ -698,6 +760,13 @@ window.AppComponent = {
                       <span class="field-label">Keywords <em>(comma separated — abbreviations, other languages)</em></span>
                       <input class="field-input" v-model="tagSettings.keywords"
                         placeholder="cxl, 取消 · english, 英" autocomplete="off" />
+                    </label>
+                    <label class="field">
+                      <span class="field-label">Icon <em>(emoji, optional)</em></span>
+                      <input class="field-input field-input--emoji"
+                        :value="tagSettings.emoji" @input="onIconInput"
+                        placeholder="📁 · 🌐 · 💻 · …" autocomplete="off"
+                        title="One icon (emoji) per tag" />
                     </label>
                     <!-- /SETTINGS FIELDS -->
                     <p class="rename-hint" v-if="activeTagSettings">
