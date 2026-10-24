@@ -231,11 +231,6 @@ window.AppComponent = {
         const name = String(tag || '').trim();
         return this.tagEmojiMap.get(name.toLowerCase()) || '';
       },
-      // railIcon(entry): the rail icon-slot glyph — a parent shows its ▸/▾ chevron
-      // (priority, even when an emoji is set); a leaf shows its emoji or '' empty.
-      railIcon(entry) {
-        return entry.hasChildren ? (entry.expanded ? '▾' : '▸') : (entry.emoji || '');
-      },
       // The tag-icon field accepts exactly one glyph (one emoji). A naive
       // maxlength="1" would forbid most emoji — they are multi-unit surrogate
       // pairs or ZWJ sequences — so we instead keep the first *grapheme cluster*
@@ -581,7 +576,8 @@ window.AppComponent = {
                     @dragend="onTagDragEnd()"
                     :title="entry.depth === 0 ? 'Drag to reorder' : ''"
                     @click="entry.hasChildren ? toggleExpand(entry.tag) : scrollToTag(entry.tag)">
-                     <span class="tag-index-chev" :class="{ 'tag-index-emoji': !entry.hasChildren && entry.emoji }" v-if="railIcon(entry)" v-text="railIcon(entry)"></span>
+                     <svg v-if="entry.hasChildren" class="tag-index-chev" :class="{ 'is-expanded': entry.expanded }" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 2 10 7 5 12"></polyline></svg>
+                     <span v-else-if="entry.emoji" class="tag-index-emoji" v-text="entry.emoji"></span>
                      <span class="tag-index-name">{{ entry.display }}</span>
                      <span class="tag-index-count">{{ entry.count }}</span>
                        <button class="tag-index-settings" title="Tag settings" @click.stop="openTagSettings(entry.tag)">⚙</button>
