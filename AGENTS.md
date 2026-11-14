@@ -38,7 +38,7 @@ each file reads the globals the previous one defined.
 Order (must stay this way — dependencies point downward):
 
 ```
-vue.global.js (CDN — <script src="https://unpkg.com/vue@3/dist/vue.global.js">
+vue.global.js (CDN — <script src="https://unpkg.com/vue@3.5.45/dist/vue.global.js">, pinned; an inline check right after it shows a notice in #bookmark-app if the CDN is unreachable)
  → bookmarks.js            `const bookmarks = [...]`              (root: global data array)
  → src/bookmark-utils.js `window.BookmarkUtils`                (normalization, favicon)
  → src/tags.js            `window.Tags`                          (collect · suggest · rename · reorder · tree)
