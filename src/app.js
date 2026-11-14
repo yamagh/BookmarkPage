@@ -427,6 +427,23 @@ window.AppComponent = {
       if (newName !== original) {
         window.Tags.rename(this.bookmarks, original, newName);
         if (this.activeTag === original) this.activeTag = newName;
+        // meta.tagOrder holds top-level tag names: swap the renamed tag's
+        // entry in place so its custom position survives the rename (a
+        // nested tag's root segment does not change, so it needs nothing).
+        // Renaming onto a name already in the list drops the old entry
+        // instead of leaving a duplicate behind.
+        const order = this.meta.tagOrder || [];
+        const oi = order.indexOf(original);
+        if (oi >= 0) {
+          if (order.includes(newName)) order.splice(oi, 1);
+          else order.splice(oi, 1, newName);
+          }
+        // expandedTags is keyed by tag string: carry the expansion state
+        // over to the new name.
+        if (Object.prototype.hasOwnProperty.call(this.expandedTags, original)) {
+          this.expandedTags[newName] = this.expandedTags[original];
+          delete this.expandedTags[original];
+          }
         }
       // Persist (or drop) this tag's settings entry, keyed by the new name. The
       // entry is kept when either keywords or an icon is set; both empty drops it.
