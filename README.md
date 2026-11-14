@@ -1,6 +1,6 @@
 # Bookmark Search Application
 
-This is a simple web app that allows you to search through a list of bookmarks by name, tag, keyword, or URL. The app uses the Vue.js framework to implement the search functionality and display the results.
+This is a simple web app that allows you to search through a list of bookmarks by name, tag, keyword, URL, or note. The app uses the Vue.js framework to implement the search functionality and display the results.
 
 ## Prerequisites
 
