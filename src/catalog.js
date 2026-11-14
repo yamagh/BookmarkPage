@@ -17,7 +17,11 @@ window.Catalog = {
     const filtered = scored.map(s => s.bm);
     const grouped = Catalog._groupByTag(filtered);
     const groups = Catalog._sortGroups(grouped, tagOrder);
-    const total = groups.reduce((n, g) => n + g.count, 0);
+    // The total is the number of distinct bookmarks that matched, NOT the
+    // sum of the group counts: a bookmark with several tags appears once
+    // per group, so summing groups would count it several times. (Each
+    // group's own count stays per-group, which is correct there.)
+    const total = filtered.length;
     const tree = Tags.tree(groups, tagOrder);
     return { groups, tree, total };
    },
