@@ -14,12 +14,16 @@
  * */
 window.SideEffects = {
    // URL navigation. A `%s` in the URL means "prompt for a search term first."
+   // The URL is normalized first (BookmarkUtils.normalizeUrl) so a stored
+   // scheme-less URL ("example.com") goes to https://example.com instead of
+   // resolving relative to bookmarks.html.
   navigate(bm) {
-    if (bm.url.includes('%s')) {
+    const url = window.BookmarkUtils.normalizeUrl(bm.url);
+    if (url.includes('%s')) {
       const value = prompt('Enter search term:', '');
-      if (value) window.location.href = bm.url.replace('%s', encodeURIComponent(value));
+      if (value) window.location.href = url.replace('%s', encodeURIComponent(value));
      } else {
-      window.location.href = bm.url;
+      window.location.href = url;
      }
    },
 

@@ -107,9 +107,24 @@ window.BookmarkUtils = {
 
 
 
+   // The one place that knows how a stored URL becomes a navigable one:
+   // a scheme-less URL ("example.com", "example.com:8080/x", "//example.com")
+   // would otherwise resolve relative to bookmarks.html itself, so give it
+   // an https scheme. URLs that already carry a scheme (with "//", or a
+   // non-hierarchical one such as mailto:) pass through untouched, as does
+   // a "%s" search template — the scheme sits in front of it either way.
+  normalizeUrl(url) {
+    const u = String(url || '').trim();
+    if (!u) return '';
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(u)) return u;
+    if (/^(mailto|tel|sms|data|about|javascript):/i.test(u)) return u;
+    if (u.startsWith('//')) return `https:${u}`;
+    return `https://${u}`;
+     },
+
   faviconUrl(url) {
     try {
-      const u = new URL(url.startsWith('http') ? url : `https://${url}`);
+      const u = new URL(BookmarkUtils.normalizeUrl(url));
       return `https://t2.google.com/favicon?sz=16&domain=${u.hostname}`;
     } catch {
       return null;
