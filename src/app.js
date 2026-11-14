@@ -841,7 +841,7 @@ window.AppComponent = {
                     <div class="modal-actions">
                       <button class="modal-btn" @click="copyCodeView">Copy</button>
                       <button class="modal-btn manage-btn--muted" @click="closeCodeView">Close</button>
-                      <button class="modal-btn modal-btn--primary" @click="downloadBookmarks; closeCodeView()">Download</button>
+                      <button class="modal-btn modal-btn--primary" @click="downloadBookmarks(); closeCodeView()">Download</button>
                     </div>
                   </div>
                 </div>
