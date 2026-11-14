@@ -26,7 +26,9 @@ window.Catalog = {
 
    // Filter (AND across space-separated parts, OR across fields) and attach a
    // match-quality score per item — exact > prefix > substring, weighted
-   // label > (tags, url) > keywords — so index() can rank results.
+   // label > (tags, url) > keywords > note — so index() can rank results.
+   // The note is free text ("why I saved this"), so it scores lowest: a
+   // note-only match finds the bookmark without outranking real fields.
     _filterAndScore(list, query, tagKeywords) {
     const q = (query || '').trim().toLowerCase();
     if (!q) return list.map(bm => ({ bm, score: 0 }));
@@ -36,6 +38,7 @@ window.Catalog = {
     for (const bm of list) {
       const label = (bm.label || '').toLowerCase();
       const url = (bm.url || '').toLowerCase();
+      const note = (bm.note || '').toLowerCase();
       const tags = bm.tags || [];
        // A bookmark's searchable keywords are its own plus the keywords of any
        // of its tags, so a tag keyword (e.g. "cxl" → "Cancel") matches the tag.
@@ -67,7 +70,12 @@ window.Catalog = {
         else if (url.startsWith(part)) urlScore = 10;
         else if (url.includes(part)) urlScore = 2;
 
-        const best = Math.max(labelScore, tagScore, kwScore, urlScore);
+        let noteScore = 0;
+        if (note === part) noteScore = 5;
+        else if (note.startsWith(part)) noteScore = 2;
+        else if (note.includes(part)) noteScore = 1;
+
+        const best = Math.max(labelScore, tagScore, kwScore, urlScore, noteScore);
         if (best === 0) { allMatch = false; break; }
         score += best;
        }

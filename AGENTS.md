@@ -64,10 +64,11 @@ via `window.SideEffects` (`loadBookmarks` falling back to the `bookmarks` data
 array in `bookmarks.js` when nothing is stored); "Download bookmarks.js" serializes the current list with
 `BookmarkUtils.serializeBookmarks` and saves it via `SideEffects.downloadFile`.
 
-**Search semantics** (`Catalog._filter`): query is trimmed,
+**Search semantics** (`Catalog._filterAndScore`): query is trimmed,
 lowercased, split on whitespace; every part must match *some* of
-`label`/`url`/`tags`/`keywords` (case-insensitive `includes`) — i.e. AND across
-space-separated parts, OR across fields.
+`label`/`url`/`tags`/`keywords`/`note` (case-insensitive `includes`) — i.e. AND across
+space-separated parts, OR across fields. Matches carry a quality score
+(label > tags/url > keywords > note) used to rank results while searching.
 
 ## Project Files
 
