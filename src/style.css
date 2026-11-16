@@ -1529,3 +1529,39 @@ kbd {
   background: rgba(192, 57, 43, .12);
   color: #c0392b;
 }
+
+/* ============================================
+   IMPORT — duplicate-strategy choices in the import modal
+   ============================================ */
+.import-strategies {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.import-strategy {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-s);
+  font-size: 13px;
+  color: var(--text-secondary);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: var(--space-s) var(--space-m);
+  cursor: pointer;
+  transition: border-color var(--transition), background-color var(--transition);
+}
+
+.import-strategy:hover {
+  border-color: var(--accent);
+}
+
+.import-strategy input {
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
+
+.import-strategy strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}

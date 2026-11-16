@@ -8,6 +8,7 @@
  *   copyText(text, label)     write text to the clipboard; execCommand fallback
  *   copyToClipboard(list)     export the list as JSON to the clipboard
  *   downloadFile(name,data,mime)  write content to a downloadable file
+ *   readFileText(file, ok, err)   read a user-picked file as text (import)
  *   getTheme() / setTheme()   read/write the light|dark theme, mirror data-theme
  *   loadBookmarks(src) / saveBookmarks(list, meta)  localStorage 'bookmarks'
  *                         (and 'meta'), falling back to the file's globals
@@ -66,6 +67,20 @@ window.SideEffects = {
       window.ToastUtils.toast(`Downloaded ${filename}`);
      } catch (e) {
       window.ToastUtils.toast('Download failed');
+     }
+   },
+
+   // File read: the import path. A user-picked File via FileReader — the
+   // only way to read a local file under file:// (fetch is unavailable).
+   // Callback style, matching the clipboard path's promise callbacks.
+  readFileText(file, onOk, onErr) {
+    try {
+      const reader = new FileReader();
+      reader.onload = () => onOk(String(reader.result || ''));
+      reader.onerror = () => { if (onErr) onErr(reader.error); };
+      reader.readAsText(file);
+     } catch (e) {
+      if (onErr) onErr(e);
      }
    },
 

@@ -73,6 +73,25 @@ The `keywords` and `tags` fields can be either strings or arrays. The applicatio
 
 You can modify or add bookmarks as needed.
 
+## Importing bookmarks
+
+Open **Manage → Import bookmarks…** and pick a file. Three formats are
+supported, detected from the file's contents:
+
+- a downloaded **`bookmarks.js`** from this app (its tag settings in
+  `meta` are merged in, without overwriting your current ones),
+- **JSON** — a bare array of bookmarks (the shape "Copy" produces), or an
+  object with a `bookmarks` array,
+- a **browser bookmark export** (Netscape Bookmark HTML, the standard
+  format Chrome / Firefox / Safari produce): folder nesting becomes a
+  hierarchical tag (`Folder / Subfolder`), and a bookmark's description
+  becomes its note.
+
+Duplicates are detected by URL. When the file contains URLs you already
+have, the import dialog asks what to do with them: **Skip** (keep yours),
+**Overwrite** (replace yours with the imported entry), or **Keep both**.
+Entries without a URL are ignored and reported in the result toast.
+
 ## Tag settings (per-tag keywords)
 
 Tags can carry their **own keywords**, separate from each bookmark's keywords —
