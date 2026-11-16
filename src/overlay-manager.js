@@ -12,7 +12,7 @@
 window.OverlayManager = {
 
   /** Overlays that suppress global keyboard shortcuts. */
-  blocking: Object.freeze(['editor', 'settings', 'code', 'menu']),
+  blocking: Object.freeze(['editor', 'settings', 'code', 'menu', 'import']),
 
   /** @returns {boolean} true when the named overlay suppresses global shortcuts. */
   isBlocking(name) {

@@ -41,6 +41,7 @@ Order (must stay this way — dependencies point downward):
 vue.global.js (CDN — <script src="https://unpkg.com/vue@3.5.45/dist/vue.global.js">, pinned; an inline check right after it shows a notice in #bookmark-app if the CDN is unreachable)
  → bookmarks.js            `const bookmarks = [...]`              (root: global data array)
  → src/bookmark-utils.js `window.BookmarkUtils`                (normalization, favicon)
+ → src/importer.js        `window.Importer`                      (import parse · duplicate plan · meta merge)
  → src/tags.js            `window.Tags`                          (collect · suggest · rename · reorder · tree)
  → src/tag-picker.js      `window.TagPicker`                     (picker state machine; needs Tags + BookmarkUtils)
  → src/catalog.js         `window.Catalog`                       (filter · group · sort · count)
@@ -63,6 +64,13 @@ keywords, note). Every change auto-saves to the `localStorage` key `bookmarks`
 via `window.SideEffects` (`loadBookmarks` falling back to the `bookmarks` data
 array in `bookmarks.js` when nothing is stored); "Download bookmarks.js" serializes the current list with
 `BookmarkUtils.serializeBookmarks` and saves it via `SideEffects.downloadFile`.
+Manage → "Import bookmarks…" reads a user-picked file via
+`SideEffects.readFileText` (FileReader — the only file://-safe read),
+`Importer.parse` turns its text into bookmarks (bookmarks.js / JSON /
+Netscape HTML), and the import dialog merges them under a duplicate
+strategy (skip / overwrite / keep both, by normalized URL) via
+`Importer.plan`; a file's `meta` is merged non-destructively by
+`Importer.mergeMeta`.
 
 **Search semantics** (`Catalog._filterAndScore`): query is trimmed,
 lowercased, split on whitespace; every part must match *some* of
@@ -75,7 +83,7 @@ space-separated parts, OR across fields. Matches carry a quality score
 - `bookmarks.html` — the thin entry point. In `<head>` it keeps a pre-render
   theme-detection inline script (runs before paint, to avoid a flash of the wrong
   theme) plus the font `preconnect`/<link> and `src/style.css`; in `<body>` it loads
-  the Vue CDN, then `bookmarks.js` (root), then the nine `src/` scripts in dependency order.
+  the Vue CDN, then `bookmarks.js` (root), then the ten `src/` scripts in dependency order.
 - `bookmarks.js` — the `const bookmarks = [...]` data array (root; the most-edited file;
    re-loadable from the "Download bookmarks.js" button).
 - `src/style.css` — all CSS: design tokens, light (`:root`) + dark
@@ -84,6 +92,11 @@ space-separated parts, OR across fields. Matches carry a quality score
    bookmark shape via `toBookmark` (and the `toList` field-to-array primitive it
    builds on). `normalizeBookmarks` (load) and `serializeBookmarks` (save) both
    route through it, plus `faviconUrl`.
+- `src/importer.js` — `window.Importer`, the import domain (parse · dedupe ·
+   merge). Pure: parses `bookmarks.js` / JSON / Netscape Bookmark HTML text
+   into canonical bookmarks (never evaluates file content), detects URL
+   duplicates, and plans the merge under the user's chosen strategy
+   (skip / overwrite / keep both). File reading itself is `SideEffects`.
 - `src/tags.js` — `window.Tags`, the tag domain (collect · suggest · rename ·
   reorder · tree). Pure: no DOM, no Vue.
 - `src/tag-picker.js` — `window.TagPicker`, the tag input + suggestion state

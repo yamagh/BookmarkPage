@@ -31,8 +31,8 @@ window.AppComponent = {
         window.BookmarkUtils.cloneBookmarks(bookmarks)
         ),
            // ---- overlay state: at most one overlay is open at a time.
-             // 'editor' | 'settings' | 'code' | 'help' | 'menu'; null = none.
-           // Per-overlay payloads follow (editing / tagSettings / codeViewText).
+             // 'editor' | 'settings' | 'code' | 'help' | 'menu' | 'import'; null = none.
+           // Per-overlay payloads follow (editing / tagSettings / codeViewText / importDraft).
       activeOverlay: null,
        // editor payload
       isNew: false,
@@ -52,7 +52,12 @@ window.AppComponent = {
       draggingTag: null,
       dragOverTag: null,
        // code-view payload
-      codeViewText: ''
+      codeViewText: '',
+       // import payload: the parsed file awaiting the user's duplicate
+       // strategy — { fileName, format, bookmarks, meta, skipped } — plus
+       // the chosen strategy ('skip' | 'overwrite' | 'keep').
+      importDraft: null,
+      importStrategy: 'skip'
      };
   },
 
@@ -82,6 +87,17 @@ window.AppComponent = {
     affectedTagCount() {
       if (!this.activeTagSettings) return 0;
       return this.bookmarks.filter(bm => (bm.tags || []).includes(this.activeTagSettings)).length;
+      },
+
+    // --- import computed: duplicate / new counts for the import dialog ---
+    importDuplicateCount() {
+      if (!this.importDraft) return 0;
+      return window.Importer.countDuplicates(this.bookmarks, this.importDraft.bookmarks);
+      },
+
+    importNewCount() {
+      if (!this.importDraft) return 0;
+      return this.importDraft.bookmarks.length - this.importDuplicateCount;
       },
 
     // --- tag picker computed ---
@@ -357,6 +373,51 @@ window.AppComponent = {
       window.SideEffects.copyText(this.codeViewText, 'Copied');
      },
 
+    // --- import: pick a file, review it, then merge with a duplicate strategy ---
+    menuImport() {
+      this.activeOverlay = null;
+      this.$refs.importFile?.click();
+     },
+
+    onImportFile(e) {
+      const file = e.target.files && e.target.files[0];
+      // Reset the input so picking the same file again re-fires change.
+      e.target.value = '';
+      if (!file) return;
+      window.SideEffects.readFileText(file, (text) => {
+        try {
+          const parsed = window.Importer.parse(text);
+          this.importDraft = { fileName: file.name, ...parsed };
+          this.importStrategy = 'skip';
+          this.activeOverlay = 'import';
+        } catch (err) {
+          window.ToastUtils.toast(`Import failed: ${err.message || 'unreadable file'}`);
+        }
+      }, () => window.ToastUtils.toast('Import failed: the file could not be read'));
+     },
+
+    closeImport() {
+      this.activeOverlay = null;
+      this.importDraft = null;
+     },
+
+    applyImport() {
+      if (!this.importDraft) return;
+      const draft = this.importDraft;
+      const result = window.Importer.plan(this.bookmarks, draft.bookmarks, this.importStrategy);
+      this.bookmarks = result.list;
+      if (draft.meta) this.meta = window.Importer.mergeMeta(this.meta, draft.meta);
+      window.SideEffects.saveBookmarks(this.bookmarks, this.meta);
+      this.closeImport();
+      const changed = result.added + result.overwritten + result.kept;
+      const parts = [`Imported ${changed} bookmark${changed === 1 ? '' : 's'}`];
+      if (result.overwritten) parts.push(`${result.overwritten} overwritten`);
+      if (result.kept) parts.push(`${result.kept} duplicate${result.kept === 1 ? '' : 's'} kept`);
+      if (result.skipped) parts.push(`${result.skipped} duplicate${result.skipped === 1 ? '' : 's'} skipped`);
+      if (draft.skipped) parts.push(`${draft.skipped} invalid entr${draft.skipped === 1 ? 'y' : 'ies'} ignored`);
+      window.ToastUtils.toast(parts.join(' · '));
+     },
+
     resetBookmarks() {
       if (!confirm('Reset to the original bookmarks? Your saved edits will be cleared.')) return false;
       this.bookmarks = window.BookmarkUtils.cloneBookmarks(this.originalBookmarks);
@@ -566,6 +627,7 @@ window.AppComponent = {
 
   template: `
         <div class="app-root">
+          <input type="file" ref="importFile" accept=".js,.json,.html,.htm" style="display:none" @change="onImportFile" />
 
           <aside class="index-rail">
             <div class="masthead">
@@ -668,7 +730,7 @@ window.AppComponent = {
                      <span class="tag-count">{{ group.count }}</span>
                    </div>
                    <ul>
-                     <li v-for="(bm, ii) in group.items" :key="bm.url" class="item"
+                     <li v-for="(bm, ii) in group.items" :key="bm.url + '#' + ii" class="item"
                            :class="{ 'is-focused': focusIndex >= 0 && focusIndex === group.flatStart + ii }">
                         <a :href="bm.url" @click.prevent="navigate(bm)" class="item-link">
                           <img v-if="faviconUrl(bm.url)" class="bm-favicon" :src="faviconUrl(bm.url)" alt="" loading="lazy" />
@@ -863,6 +925,45 @@ window.AppComponent = {
                   </div>
                 </div>
 
+                <!-- Import modal — review the parsed file, choose how URL
+                     duplicates are handled, then merge. Nothing is applied
+                     until Import is pressed. -->
+                 <div class="modal-overlay" v-if="activeOverlay === 'import' && importDraft" @click.self="closeImport">
+                  <div class="modal" role="dialog" aria-modal="true" @click.stop>
+                    <h2 class="modal-title">Import bookmarks</h2>
+                    <div class="modal-body">
+                      <p class="rename-hint">
+                        {{ importDraft.fileName }} ({{ importDraft.format }}) —
+                        {{ importDraft.bookmarks.length }} bookmark{{ importDraft.bookmarks.length !== 1 ? 's' : '' }} found:
+                        {{ importNewCount }} new, {{ importDuplicateCount }} duplicate{{ importDuplicateCount !== 1 ? 's' : '' }} by URL.
+                        <template v-if="importDraft.skipped">{{ importDraft.skipped }} invalid entr{{ importDraft.skipped === 1 ? 'y' : 'ies' }} will be ignored.</template>
+                        <template v-if="importDraft.meta"> The file's tag settings (meta) will be merged in.</template>
+                      </p>
+                      <div class="field" v-if="importDuplicateCount > 0">
+                        <span class="field-label">When a URL already exists</span>
+                        <div class="import-strategies">
+                          <label class="import-strategy">
+                            <input type="radio" value="skip" v-model="importStrategy" />
+                            <span><strong>Skip</strong> — keep the existing bookmark</span>
+                          </label>
+                          <label class="import-strategy">
+                            <input type="radio" value="overwrite" v-model="importStrategy" />
+                            <span><strong>Overwrite</strong> — replace it with the imported one</span>
+                          </label>
+                          <label class="import-strategy">
+                            <input type="radio" value="keep" v-model="importStrategy" />
+                            <span><strong>Keep both</strong> — add the duplicate alongside</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="modal-actions">
+                      <button class="modal-btn modal-btn--muted" @click="closeImport">Cancel</button>
+                      <button class="modal-btn modal-btn--primary" @click="applyImport">Import</button>
+                    </div>
+                  </div>
+                </div>
+
                     <!-- Manage menu modal — the rail's secondary actions, one trigger -->
                     <div class="modal-overlay" v-if="activeOverlay === 'menu'" @click.self="closeAllModals">
                      <div class="modal modal--menu" role="dialog" aria-modal="true" @click.stop>
@@ -880,6 +981,13 @@ window.AppComponent = {
                            <span class="modal-menu-text">
                              <span class="modal-menu-label">Download bookmarks.js</span>
                              <span class="modal-menu-hint">Export a re-loadable copy</span>
+                           </span>
+                         </button>
+                         <button class="modal-menu-item" @click="menuImport">
+                           <span class="modal-menu-icon">↑</span>
+                           <span class="modal-menu-text">
+                             <span class="modal-menu-label">Import bookmarks…</span>
+                             <span class="modal-menu-hint">From bookmarks.js, JSON, or a browser bookmark file</span>
                            </span>
                          </button>
                          <button class="modal-menu-item" @click="menuOpenHelp">
